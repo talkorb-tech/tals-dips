@@ -1087,11 +1087,11 @@
     }
 
     /* ── PIN Lock ──────────────────────────────────────── */
-    const PIN_KEY  = 'tals_pin_hash';
-    const AUTH_KEY = 'tals_authed';
+    const PIN_KEY = 'tals_pin_hash';
 
-    let pinBuffer  = '';
-    let pinMode    = 'enter';   // 'enter' | 'setup' | 'confirm'
+    let _authed      = false;   // in-memory only — cleared on every page load
+    let pinBuffer    = '';
+    let pinMode      = 'enter'; // 'enter' | 'setup' | 'confirm'
     let pinSetupTemp = '';
 
     async function hashPin(pin) {
@@ -1100,14 +1100,9 @@
     }
 
     function initPinLock() {
-      // Already authenticated this browser session
-      if (sessionStorage.getItem(AUTH_KEY) === '1') {
-        document.getElementById('pin-overlay').style.display = 'none';
-        return;
-      }
+      // _authed is always false on page load — every visit requires PIN
       const saved = localStorage.getItem(PIN_KEY);
       if (!saved) {
-        // First time: guide them to create a PIN
         pinMode = 'setup';
         setPinUI('צור קוד כניסה', 'בחרי קוד PIN בן 4-6 ספרות');
       } else {
@@ -1161,7 +1156,7 @@
         const hash  = await hashPin(pinBuffer);
         const saved = localStorage.getItem(PIN_KEY);
         if (hash === saved) {
-          sessionStorage.setItem(AUTH_KEY, '1');
+          _authed = true;
           document.getElementById('pin-overlay').style.display = 'none';
         } else {
           pinError('קוד שגוי — נסי שוב');
@@ -1176,7 +1171,7 @@
         if (pinBuffer === pinSetupTemp) {
           const hash = await hashPin(pinBuffer);
           localStorage.setItem(PIN_KEY, hash);
-          sessionStorage.setItem(AUTH_KEY, '1');
+          _authed = true;
           document.getElementById('pin-overlay').style.display = 'none';
         } else {
           pinSetupTemp = '';
