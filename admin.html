@@ -452,13 +452,7 @@
       transition: background 0.12s, transform 0.08s;
     }
     .pin-numpad button:active { background: #444; transform: scale(0.93); }
-    .pin-numpad .pin-key-action {
-      background: #fff; color: #1a1a1a;
-      font-size: 14px; font-weight: 800;
-    }
-    .pin-numpad .pin-key-action:active { background: #ddd; }
     .pin-numpad .pin-key-del { font-size: 18px; }
-    /* 0 is center of last row, action on right, del on left */
   </style>
 </head>
 <body>
@@ -653,8 +647,6 @@
         <div class="pin-dot"></div>
         <div class="pin-dot"></div>
         <div class="pin-dot"></div>
-        <div class="pin-dot"></div>
-        <div class="pin-dot"></div>
       </div>
       <div class="pin-error" id="pin-error"></div>
 
@@ -668,9 +660,9 @@
         <button onclick="pinDigit('7')">7</button>
         <button onclick="pinDigit('8')">8</button>
         <button onclick="pinDigit('9')">9</button>
-        <button class="pin-key-del" onclick="pinBackspace()">⌫</button>
+        <button style="visibility:hidden"></button>
         <button onclick="pinDigit('0')">0</button>
-        <button class="pin-key-action" id="pin-action-btn" onclick="pinAction()">→</button>
+        <button class="pin-key-del" onclick="pinBackspace()">⌫</button>
       </div>
     </div>
   </div>
@@ -1098,26 +1090,28 @@
       const saved = localStorage.getItem(PIN_KEY);
       if (!saved) {
         pinMode = 'setup';
-        setPinUI('צור קוד כניסה', 'בחרי קוד PIN בן 4-6 ספרות');
+        setPinUI('צור קוד כניסה', 'הזיני 4 ספרות');
       } else {
         pinMode = 'enter';
         setPinUI('קוד כניסה', 'הזיני את קוד הכניסה');
       }
+      pinBuffer = '';
+      updateDots();
       document.getElementById('pin-overlay').style.display = 'flex';
     }
 
     function setPinUI(title, subtitle) {
       document.getElementById('pin-title').textContent    = title;
       document.getElementById('pin-subtitle').textContent = subtitle;
-      document.getElementById('pin-action-btn').textContent =
-        (pinMode === 'enter') ? '→' : '✓';
     }
 
     function pinDigit(d) {
-      if (pinBuffer.length >= 6) return;
+      if (pinBuffer.length >= 4) return;
+      document.getElementById('pin-error').textContent = '';
       pinBuffer += d;
       updateDots();
-      // Auto-submit in enter mode once we have 4+ digits AND user presses the last one
+      // Auto-submit when 4th digit is entered
+      if (pinBuffer.length === 4) setTimeout(pinSubmit, 180);
     }
 
     function pinBackspace() {
@@ -1128,8 +1122,9 @@
     function updateDots() {
       document.querySelectorAll('.pin-dot').forEach((dot, i) => {
         dot.classList.toggle('filled', i < pinBuffer.length);
+        dot.style.background   = '';
+        dot.style.borderColor  = '';
       });
-      document.getElementById('pin-error').textContent = '';
     }
 
     function pinError(msg) {
@@ -1141,11 +1136,7 @@
       updateDots();
     }
 
-    function pinAction() {
-      if (pinBuffer.length < 4) {
-        pinError('הקוד חייב להכיל לפחות 4 ספרות');
-        return;
-      }
+    function pinSubmit() {
       if (pinMode === 'enter') {
         if (pinBuffer === localStorage.getItem(PIN_KEY)) {
           _authed = true;
@@ -1158,27 +1149,34 @@
         pinBuffer = '';
         updateDots();
         pinMode = 'confirm';
-        setPinUI('אמתי את הקוד', 'הזיני את הקוד שוב לאישור');
+        setPinUI('אמתי את הקוד', 'הזיני שוב את אותן 4 ספרות');
       } else if (pinMode === 'confirm') {
         if (pinBuffer === pinSetupTemp) {
-          localStorage.setItem(PIN_KEY, pinBuffer);
-          _authed = true;
-          document.getElementById('pin-overlay').style.display = 'none';
+          // Save, show green-dot success for 1.2 s, then dismiss
+          try { localStorage.setItem(PIN_KEY, pinBuffer); } catch(e) {}
+          setPinUI('✅ הקוד נשמר!', 'בכניסה הבאה תצטרכי להזין את הקוד');
+          document.getElementById('pin-error').textContent = '';
+          document.querySelectorAll('.pin-dot').forEach(dot => {
+            dot.style.background  = '#4caf50';
+            dot.style.borderColor = '#4caf50';
+          });
+          setTimeout(() => {
+            _authed = true;
+            document.getElementById('pin-overlay').style.display = 'none';
+          }, 1200);
         } else {
-          pinSetupTemp = '';
-          pinMode = 'setup';
-          setPinUI('צור קוד כניסה', 'הקודים לא תאמו — נסי שוב');
-          pinError('הקודים לא תאמו');
+          // Stay in confirm mode — just ask them to try the confirmation again
+          pinError('הקודים לא תאמו — נסי שוב את האישור');
+          // pinSetupTemp stays intact; user re-enters 4-digit confirmation
         }
       }
     }
 
-    // Keyboard support
+    // Keyboard support (desktop)
     document.addEventListener('keydown', e => {
       if (document.getElementById('pin-overlay').style.display === 'none') return;
       if (e.key >= '0' && e.key <= '9') pinDigit(e.key);
       else if (e.key === 'Backspace')    pinBackspace();
-      else if (e.key === 'Enter')        pinAction();
     });
 
     function startChangePIN() {
