@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ניהול — הסלטים של טל</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f2f2ee;
+      --surface: #ffffff;
+      --border: #e0e0d8;
+      --text: #1a1a1a;
+      --text-muted: #888;
+      --primary: #1a1a1a;
+      --danger: #dc3545;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    html { direction: rtl; font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    body { min-height: 100vh; }
+
+    /* ── Header ── */
+    .admin-header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-brand { font-size: 18px; font-weight: 800; }
+    .admin-badge {
+      font-size: 11px; font-weight: 500;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 10px; border-radius: 99px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 16px;
+      gap: 4px;
+      position: sticky;
+      top: 49px;
+      z-index: 99;
+    }
+    .tab-btn {
+      padding: 13px 16px;
+      background: none; border: none;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+
+    /* ── Panes ── */
+    .tab-pane { display: none; padding: 20px 16px 48px; max-width: 700px; margin: 0 auto; }
+    .tab-pane.active { display: block; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: var(--radius-sm);
+      border: none; font-family: 'Heebo', sans-serif;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: #f0f0ea; color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-icon { padding: 7px 10px; }
+
+    /* ── Dips tab ── */
+    .list-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 16px;
+    }
+    .list-header h2 { font-size: 18px; font-weight: 800; }
+
+    .dip-row {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .dip-row .row-emoji { font-size: 28px; flex-shrink: 0; }
+    .dip-row .row-info { flex: 1; min-width: 0; }
+    .dip-row .row-name { font-size: 16px; font-weight: 700; }
+    .dip-row .row-tagline {
+      font-size: 13px; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .row-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .empty-state { text-align: center; padding: 56px 20px; color: var(--text-muted); }
+    .empty-state .big { font-size: 52px; display: block; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: flex; align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border-radius: 18px;
+      width: 100%; max-width: 520px;
+      margin: auto;
+      box-shadow: 0 10px 48px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 18px; font-weight: 800; }
+    .modal-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: var(--text-muted); width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; transition: background 0.15s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text); }
+    .modal-body { padding: 20px; max-height: 72vh; overflow-y: auto; }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .form-input, .form-textarea {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px; color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      outline: none; border-color: var(--text); background: #fff;
+    }
+    .form-textarea { resize: vertical; min-height: 84px; line-height: 1.65; }
+
+    .emoji-hero {
+      font-size: 64px; text-align: center; padding: 14px 10px 10px;
+      background: var(--bg); border-radius: var(--radius-sm);
+      margin-bottom: 10px; line-height: 1;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+
+    /* dynamic lists */
+    .dynamic-list { display: flex; flex-direction: column; gap: 8px; }
+    .dynamic-item { display: flex; gap: 8px; align-items: center; }
+    .dynamic-item .form-input { flex: 1; }
+    .remove-btn {
+      background: none; border: 1.5px solid var(--border);
+      color: var(--text-muted);
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: border-color 0.15s, color 0.15s;
+    }
+    .remove-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .add-item-btn {
+      align-self: flex-start;
+      background: none; border: 1.5px dashed var(--border);
+      color: var(--text-muted);
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-item-btn:hover { border-color: var(--text); color: var(--text); }
+
+    /* color pickers */
+    .color-row { display: flex; gap: 16px; align-items: flex-end; }
+    .color-field label { font-size: 11px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input[type="color"] {
+      width: 56px; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      padding: 2px; background: none; cursor: pointer;
+    }
+    .color-preview-bar {
+      flex: 1; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+    }
+
+    /* URL ID hint */
+    .field-hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+
+    /* ── QR tab ── */
+    .url-bar {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .url-bar-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: block; }
+    .url-input-row { display: flex; gap: 10px; }
+    .url-input-row .form-input { flex: 1; direction: ltr; text-align: left; font-family: monospace; }
+
+    .qr-labels-wrap {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 16px;
+      margin-bottom: 16px;
+    }
+    .qr-labels-title {
+      font-size: 13px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 16px; text-align: center;
+    }
+
+    /* Label grid — 3 per row on screen */
+    .qr-labels-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;         /* no gap — cut lines handle spacing */
+    }
+
+    /* Each label */
+    .qr-label {
+      border: 1.5px dashed #ccc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fff;
+      overflow: hidden;
+      cursor: default;
+      position: relative;
+    }
+    .qr-label-top {
+      padding: 6px 8px 2px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #aaa;
+      text-align: center;
+      width: 100%;
+    }
+    .qr-label canvas {
+      display: block;
+      margin: 4px auto 0;
+    }
+    .qr-label-bottom {
+      width: 100%;
+      padding: 7px 8px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 4px;
+    }
+    .qr-label-bottom .lb-emoji { font-size: 15px; line-height: 1; }
+    .qr-label-bottom .lb-name {
+      font-size: 12px; font-weight: 800;
+      color: #fff; line-height: 1.2;
+      text-align: center;
+    }
+
+    .qr-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
+
+    .print-bar { text-align: center; margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Export tab ── */
+    .export-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .export-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .export-card p { font-size: 14px; color: var(--text-muted); line-height: 1.65; margin-bottom: 16px; }
+    .code-preview {
+      background: #111;
+      color: #98d98e;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      font-family: monospace; font-size: 12px;
+      max-height: 220px; overflow-y: auto;
+      direction: ltr; text-align: left;
+      margin-bottom: 16px;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    .info-box {
+      background: #eef5fd;
+      border: 1px solid #c5ddf5;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 13px; color: #1a4a72;
+      line-height: 1.7; margin-bottom: 16px;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+
+    .danger-zone {
+      border: 1.5px solid #f5c6cb;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .danger-zone h3 { font-size: 15px; font-weight: 700; color: var(--danger); margin-bottom: 6px; }
+    .danger-zone p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
+
+    /* ── Print ── */
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .admin-header, .tab-bar, .url-bar, .print-bar,
+      #tab-dips, #tab-export { display: none !important; }
+      #tab-qr { display: block !important; padding: 4mm; }
+      .qr-labels-wrap { box-shadow: none; padding: 0; border-radius: 0; }
+      .qr-labels-title { display: none; }
+      .qr-labels-grid { grid-template-columns: repeat(4, 1fr); }
+      .qr-label { border: 1.5px dashed #bbb; page-break-inside: avoid; }
+    }
+
+    @media (max-width: 400px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="admin-header">
+    <div class="admin-brand">הסלטים של טל</div>
+    <span class="admin-badge">ניהול</span>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="dips">🥗 סלטים</button>
+    <button class="tab-btn" data-tab="qr">📱 QR Codes</button>
+    <button class="tab-btn" data-tab="export">💾 ייצוא</button>
+  </div>
+
+  <!-- ── TAB: Dips ── -->
+  <div id="tab-dips" class="tab-pane active">
+    <div class="list-header">
+      <h2 id="dips-count">סלטים</h2>
+      <button class="btn btn-primary" onclick="openAddModal()">＋ הוסף סלט</button>
+    </div>
+    <div id="dips-list"></div>
+  </div>
+
+  <!-- ── TAB: QR ── -->
+  <div id="tab-qr" class="tab-pane">
+    <div class="url-bar">
+      <span class="url-bar-label">כתובת האתר שלך (GitHub Pages):</span>
+      <div class="url-input-row">
+        <input class="form-input" id="base-url-input"
+          type="text" placeholder="https://username.github.io/tals-dips" />
+        <button class="btn btn-primary" onclick="generateAllQR()">צור QR</button>
+      </div>
+    </div>
+    <div class="qr-labels-wrap" id="qr-labels-wrap">
+      <div class="qr-labels-title">תוויות להדפסה — גזרי וצרפי על הקופסאות</div>
+      <div id="qr-labels-grid" class="qr-labels-grid">
+        <div class="qr-empty" style="grid-column:1/-1">
+          הזיני את כתובת האתר ולחצי "צור QR" כדי לייצר את התוויות
+        </div>
+      </div>
+    </div>
+    <div class="print-bar">
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ הדפס תוויות</button>
+    </div>
+  </div>
+
+  <!-- ── TAB: Export ── -->
+  <div id="tab-export" class="tab-pane">
+    <div class="export-card">
+      <h3>ייצוא קובץ data.js</h3>
+      <p>
+        כל השינויים שביצעת שמורים בדפדפן שלך.
+        כדי שהאתר יתעדכן לכולם — הורד את הקובץ המעודכן והעלה אותו לגיטהאב.
+      </p>
+      <div id="code-preview" class="code-preview">לחצי על "ייצוא" כדי לראות את הקוד...</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="refreshAndDownload()">⬇️ הורד data.js</button>
+        <button class="btn btn-secondary" onclick="updateExportPreview()">🔄 רענן תצוגה</button>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>איך לעדכן את האתר ב-GitHub:</strong>
+      1. הורד את data.js<br>
+      2. גש למאגר שלך ב-GitHub<br>
+      3. לחץ על הקובץ data.js ← עריכה (✏️) ← מחק הכל ← הדבק את התוכן החדש<br>
+      4. לחץ "Commit changes" — האתר יתעדכן תוך דקה
+    </div>
+
+    <div class="danger-zone">
+      <h3>⚠️ איפוס</h3>
+      <p>בטל את כל השינויים שביצעת וחזור לנתונים המקוריים שב-data.js.</p>
+      <button class="btn btn-danger btn-sm" onclick="resetToOriginal()">↺ איפוס לנתונים המקוריים</button>
+    </div>
+  </div>
+
+  <!-- ── MODAL ── -->
+  <div id="modal" class="modal-overlay hidden" onclick="handleOverlayClick(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">הוסף סלט חדש</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="emoji-hero" id="emoji-preview">🥗</div>
+
+        <div class="two-col">
+          <div class="form-group">
+            <label class="form-label">אמוג'י</label>
+            <input class="form-input" id="field-emoji" type="text" maxlength="4"
+              style="font-size:22px; text-align:center;"
+              oninput="updateEmojiPreview(this.value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">שם הסלט</label>
+            <input class="form-input" id="field-name" type="text" placeholder="חומוס ביתי" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">תיאור קצר</label>
+          <input class="form-input" id="field-tagline" type="text" placeholder="קרמי, עשיר, מלא טעם" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">תיאור מלא</label>
+          <textarea class="form-textarea" id="field-description"
+            placeholder="ספרי על הסלט — מה מיוחד בו, איך הוא מוכן..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">מצרכים</label>
+          <div class="dynamic-list" id="ingredients-list"></div>
+          <button class="add-item-btn" onclick="addListItem('ingredients-list')">＋ הוסף מצרך</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">שימושים / מה לעשות איתו</label>
+          <div class="dynamic-list" id="uses-list"></div>
+          <button class="add-item-btn" onclick="addListItem('uses-list')">＋ הוסף שימוש</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">צבעים</label>
+          <div class="color-row">
+            <div class="color-field">
+              <label>רקע הכרטיס</label>
+              <input type="color" id="field-color" value="#f5e6c8" oninput="updateColorPreview()" />
+            </div>
+            <div class="color-field">
+              <label>הדגשה</label>
+              <input type="color" id="field-accent" value="#c8a45a" oninput="updateColorPreview()" />
+            </div>
+            <div class="color-preview-bar" id="color-preview-bar"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">מזהה URL</label>
+          <input class="form-input" id="field-id" type="text" placeholder="hummus"
+            style="direction:ltr; font-family:monospace;" />
+          <div class="field-hint">⚠️ לא לשנות אחרי שמדפיסים QR code — זה מה שמופיע בקישור</div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">ביטול</button>
+        <button class="btn btn-primary" onclick="saveDip()">✓ שמור סלט</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    /* ── Storage ───────────────────────────────────────── */
+    const STORAGE_KEY = 'tals_dips_v1';
+    const URL_KEY     = 'tals_base_url';
+
+    function loadDips() {
+      const s = localStorage.getItem(STORAGE_KEY);
+      if (s) { try { return JSON.parse(s); } catch(e) {} }
+      return JSON.parse(JSON.stringify(dips));
+    }
+    function persistDips() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentDips));
+    }
+
+    let currentDips = loadDips();
+    let editingId   = null;
+
+    /* ── Tabs ──────────────────────────────────────────── */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const pane = document.getElementById('tab-' + btn.dataset.tab);
+        pane.classList.add('active');
+        if (btn.dataset.tab === 'export') updateExportPreview();
+      });
+    });
+
+    /* ── Dips list ─────────────────────────────────────── */
+    function renderDipsList() {
+      const list    = document.getElementById('dips-list');
+      const entries = Object.entries(currentDips);
+      document.getElementById('dips-count').textContent =
+        `סלטים (${entries.length})`;
+
+      if (entries.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <span class="big">🫙</span>
+            <p>עדיין אין סלטים — הוסיפי את הראשון!</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = entries.map(([id, dip]) => `
+        <div class="dip-row">
+          <div class="row-emoji">${dip.emoji}</div>
+          <div class="row-info">
+            <div class="row-name">${escHtml(dip.name)}</div>
+            <div class="row-tagline">${escHtml(dip.tagline)}</div>
+          </div>
+          <div class="row-swatch" style="background:${dip.accent}"></div>
+          <div class="row-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${escHtml(id)}')">✏️ ערוך</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDip('${escHtml(id)}')">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ── Modal helpers ─────────────────────────────────── */
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('modal')) closeModal();
+    }
+
+    function openAddModal() {
+      editingId = null;
+      document.getElementById('modal-title').textContent = 'הוסף סלט חדש';
+      setField('emoji', '🥗');
+      setField('name', '');
+      setField('tagline', '');
+      setField('description', '');
+      setField('color', '#f5e6c8');
+      setField('accent', '#c8a45a');
+      setField('id', 'd' + Date.now().toString().slice(-5));
+      updateEmojiPreview('🥗');
+      updateColorPreview();
+      renderDynamicList('ingredients-list', []);
+      renderDynamicList('uses-list', []);
+      document.getElementById('field-id').removeAttribute('readonly');
+      showModal();
+    }
+
+    function openEditModal(id) {
+      editingId = id;
+      const dip = currentDips[id];
+      document.getElementById('modal-title').textContent = 'ערוך סלט';
+      setField('emoji',       dip.emoji);
+      setField('name',        dip.name);
+      setField('tagline',     dip.tagline);
+      setField('description', dip.description);
+      setField('color',       dip.color);
+      setField('accent',      dip.accent);
+      setField('id',          id);
+      updateEmojiPreview(dip.emoji);
+      updateColorPreview();
+      renderDynamicList('ingredients-list', dip.ingredients || []);
+      renderDynamicList('uses-list',        dip.uses        || []);
+      showModal();
+    }
+
+    function showModal()  { document.getElementById('modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    function setField(name, val) {
+      document.getElementById('field-' + name).value = val;
+    }
+
+    function updateEmojiPreview(val) {
+      document.getElementById('emoji-preview').textContent = val || '🥗';
+    }
+
+    function updateColorPreview() {
+      const color  = document.getElementById('field-color').value;
+      const accent = document.getElementById('field-accent').value;
+      document.getElementById('color-preview-bar').style.background =
+        `linear-gradient(135deg, ${color} 55%, ${accent} 100%)`;
+    }
+
+    /* ── Dynamic lists ─────────────────────────────────── */
+    function renderDynamicList(listId, items) {
+      const c = document.getElementById(listId);
+      c.innerHTML = items.map(item => dynamicItemHtml(item)).join('');
+    }
+
+    function dynamicItemHtml(val) {
+      return `
+        <div class="dynamic-item">
+          <input class="form-input" value="${escHtml(val)}" placeholder="הוסיפי פריט..." />
+          <button class="remove-btn" onclick="this.parentElement.remove()" type="button">×</button>
+        </div>`;
+    }
+
+    function addListItem(listId) {
+      const c = document.getElementById(listId);
+      c.insertAdjacentHTML('beforeend', dynamicItemHtml(''));
+      c.lastElementChild.querySelector('input').focus();
+    }
+
+    function getListValues(listId) {
+      return [...document.getElementById(listId).querySelectorAll('input')]
+        .map(i => i.value.trim()).filter(Boolean);
+    }
+
+    /* ── Save / Delete ─────────────────────────────────── */
+    function saveDip() {
+      const id = document.getElementById('field-id').value.trim();
+      if (!id)                        { alert('נא להזין מזהה URL'); return; }
+      if (!/^[a-z0-9_-]+$/i.test(id)) { alert('המזהה יכול להכיל רק אותיות לועזיות, מספרים, קו תחתון או מקף'); return; }
+      const name = document.getElementById('field-name').value.trim();
+      if (!name)                      { alert('נא להזין שם סלט'); return; }
+
+      if (editingId && editingId !== id) delete currentDips[editingId];
+
+      currentDips[id] = {
+        name,
+        emoji:       document.getElementById('field-emoji').value.trim() || '🥗',
+        tagline:     document.getElementById('field-tagline').value.trim(),
+        description: document.getElementById('field-description').value.trim(),
+        ingredients: getListValues('ingredients-list'),
+        uses:        getListValues('uses-list'),
+        color:       document.getElementById('field-color').value,
+        accent:      document.getElementById('field-accent').value,
+      };
+
+      persistDips();
+      renderDipsList();
+      closeModal();
+    }
+
+    function deleteDip(id) {
+      if (!confirm(`למחוק את "${currentDips[id]?.name}"?`)) return;
+      delete currentDips[id];
+      persistDips();
+      renderDipsList();
+    }
+
+    /* ── QR Codes ──────────────────────────────────────── */
+    function generateAllQR() {
+      const base = document.getElementById('base-url-input').value.trim().replace(/\/$/, '');
+      if (!base) { alert('נא להזין כתובת אתר'); return; }
+      localStorage.setItem(URL_KEY, base);
+
+      const grid = document.getElementById('qr-labels-grid');
+      grid.innerHTML = '';
+
+      Object.entries(currentDips).forEach(([id, dip]) => {
+        const url = `${base}/dip.html?id=${id}`;
+
+        // Build label
+        const label = document.createElement('div');
+        label.className = 'qr-label';
+
+        // Top: brand name
+        const top = document.createElement('div');
+        top.className = 'qr-label-top';
+        top.textContent = 'הסלטים של טל';
+
+        // QR canvas
+        const canvas = document.createElement('canvas');
+
+        // Bottom: colored bar with emoji + name
+        const bottom = document.createElement('div');
+        bottom.className = 'qr-label-bottom';
+        bottom.style.background = dip.accent;
+        bottom.innerHTML = `
+          <span class="lb-emoji">${dip.emoji}</span>
+          <span class="lb-name">${escHtml(dip.name)}</span>
+        `;
+
+        label.appendChild(top);
+        label.appendChild(canvas);
+        label.appendChild(bottom);
+        grid.appendChild(label);
+
+        QRCode.toCanvas(canvas, url, {
+          width: 110, margin: 1,
+          color: { dark: '#1a1a1a', light: '#ffffff' }
+        });
+      });
+    }
+
+    /* ── Export ────────────────────────────────────────── */
+    function generateDataJs() {
+      const lines = [
+        'const BRAND_NAME = "הסלטים של טל";',
+        'const BRAND_TAGLINE = "טרי, טבעי, ביתי";',
+        '',
+        'const dips = {'
+      ];
+      const entries = Object.entries(currentDips);
+      entries.forEach(([id, dip], i) => {
+        lines.push(`  ${id}: {`);
+        lines.push(`    name: ${JSON.stringify(dip.name)},`);
+        lines.push(`    emoji: ${JSON.stringify(dip.emoji)},`);
+        lines.push(`    tagline: ${JSON.stringify(dip.tagline)},`);
+        lines.push(`    description: ${JSON.stringify(dip.description)},`);
+        lines.push(`    ingredients: [`);
+        (dip.ingredients || []).forEach(v => lines.push(`      ${JSON.stringify(v)},`));
+        lines.push(`    ],`);
+        lines.push(`    uses: [`);
+        (dip.uses || []).forEach(v => lines.push(`      ${JSON.stringify(v)},`));
+        lines.push(`    ],`);
+        lines.push(`    color: ${JSON.stringify(dip.color)},`);
+        lines.push(`    accent: ${JSON.stringify(dip.accent)},`);
+        lines.push(`  }${i < entries.length - 1 ? ',' : ''}`);
+      });
+      lines.push('};');
+      return lines.join('\n');
+    }
+
+    function updateExportPreview() {
+      document.getElementById('code-preview').textContent = generateDataJs();
+    }
+
+    function refreshAndDownload() {
+      updateExportPreview();
+      const blob = new Blob([generateDataJs()], { type: 'application/javascript' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: 'data.js' });
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetToOriginal() {
+      if (!confirm('לאפס הכל לנתונים המקוריים? כל השינויים שלך יימחקו.')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      currentDips = JSON.parse(JSON.stringify(dips));
+      persistDips();
+      renderDipsList();
+    }
+
+    /* ── Utils ─────────────────────────────────────────── */
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Init ──────────────────────────────────────────── */
+    const savedUrl = localStorage.getItem(URL_KEY) || '';
+    document.getElementById('base-url-input').value = savedUrl;
+
+    renderDipsList();
+    updateColorPreview();
+
+    // Auto-generate QR if URL was previously saved
+    if (savedUrl) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        if (b.dataset.tab === 'qr') b.dataset.autoqr = '1';
+      });
+    }
+  </script>
+
+</body>
+</html>

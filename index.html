@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הסלטים של טל</title>
+  <meta name="description" content="סלטים ביתיים טריים, טבעיים, עם אהבה" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="brand">הסלטים של טל</div>
+    <div class="tagline">טרי · טבעי · ביתי</div>
+  </header>
+
+  <div class="page-intro">
+    <h2>בחרו סלט לפרטים נוספים</h2>
+  </div>
+
+  <div class="dips-grid" id="dips-grid">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <footer class="site-footer">
+    עשוי עם אהבה 🤍
+  </footer>
+
+  <script src="data.js"></script>
+  <script>
+    const grid = document.getElementById('dips-grid');
+
+    Object.entries(dips).forEach(([id, dip]) => {
+      const card = document.createElement('a');
+      card.href = `dip.html?id=${id}`;
+      card.className = 'dip-card';
+      card.style.borderColor = dip.accent + '44';
+      card.style.background = dip.color;
+
+      card.innerHTML = `
+        <span class="card-emoji">${dip.emoji}</span>
+        <div class="card-name">${dip.name}</div>
+        <div class="card-tagline">${dip.tagline}</div>
+      `;
+
+      grid.appendChild(card);
+    });
+  </script>
+
+</body>
+</html>

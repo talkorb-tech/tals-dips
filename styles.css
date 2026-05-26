@@ -1,0 +1,336 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #fafaf8;
+  --text: #1a1a1a;
+  --text-muted: #666;
+  --border: #e8e8e4;
+  --card-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  padding-bottom: 48px;
+}
+
+/* ── Header ── */
+.site-header {
+  padding: 32px 24px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+.site-header .brand {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.site-header .tagline {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* ── Index page grid ── */
+.page-intro {
+  padding: 28px 24px 8px;
+  text-align: center;
+}
+
+.page-intro h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.dips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 20px 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.dip-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 20px 16px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+}
+
+.dip-card:active {
+  transform: scale(0.97);
+}
+
+.dip-card .card-emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.dip-card .card-name {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.dip-card .card-tagline {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Dip detail page ── */
+.dip-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 0 40px;
+}
+
+.dip-hero {
+  padding: 36px 24px 28px;
+  text-align: center;
+}
+
+.dip-hero .dip-emoji {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.dip-hero .dip-name {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.dip-hero .dip-tagline {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.section-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  margin: 0 16px 14px;
+  overflow: hidden;
+}
+
+.section-card .section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 16px 20px 4px;
+}
+
+.section-card .section-body {
+  padding: 8px 20px 20px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.ingredients-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 20px 20px;
+}
+
+.ingredients-list li {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.uses-list {
+  list-style: none;
+  padding: 8px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uses-list li {
+  font-size: 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.uses-list li::before {
+  content: "✓";
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── Back button ── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  margin: 20px 16px 0;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.back-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* ── Footer ── */
+.site-footer {
+  text-align: center;
+  padding: 32px 24px 0;
+  font-size: 12px;
+  color: #bbb;
+  font-weight: 300;
+}
+
+/* ── Not found ── */
+.not-found {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.not-found .big-emoji {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.not-found h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+/* ── QR helper page ── */
+.qr-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.qr-page h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.qr-page .subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.qr-item {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 20px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.qr-item .qr-info {
+  flex: 1;
+}
+
+.qr-item .qr-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.qr-item .qr-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  word-break: break-all;
+  direction: ltr;
+  text-align: right;
+}
+
+.qr-item .qr-code-box {
+  flex-shrink: 0;
+}
+
+.qr-item img {
+  display: block;
+  border-radius: 8px;
+}
+
+.qr-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  border: 1px solid var(--border);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 360px) {
+  .dips-grid {
+    grid-template-columns: 1fr;
+  }
+}
