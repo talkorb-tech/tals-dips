@@ -1087,20 +1087,14 @@
     }
 
     /* ── PIN Lock ──────────────────────────────────────── */
-    const PIN_KEY = 'tals_pin_hash';
+    const PIN_KEY = 'tals_pin';
 
-    let _authed      = false;   // in-memory only — cleared on every page load
+    let _authed      = false;  // in-memory only — cleared on every page load
     let pinBuffer    = '';
     let pinMode      = 'enter'; // 'enter' | 'setup' | 'confirm'
     let pinSetupTemp = '';
 
-    async function hashPin(pin) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
-      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-
     function initPinLock() {
-      // _authed is always false on page load — every visit requires PIN
       const saved = localStorage.getItem(PIN_KEY);
       if (!saved) {
         pinMode = 'setup';
@@ -1147,15 +1141,13 @@
       updateDots();
     }
 
-    async function pinAction() {
+    function pinAction() {
       if (pinBuffer.length < 4) {
         pinError('הקוד חייב להכיל לפחות 4 ספרות');
         return;
       }
       if (pinMode === 'enter') {
-        const hash  = await hashPin(pinBuffer);
-        const saved = localStorage.getItem(PIN_KEY);
-        if (hash === saved) {
+        if (pinBuffer === localStorage.getItem(PIN_KEY)) {
           _authed = true;
           document.getElementById('pin-overlay').style.display = 'none';
         } else {
@@ -1169,8 +1161,7 @@
         setPinUI('אמתי את הקוד', 'הזיני את הקוד שוב לאישור');
       } else if (pinMode === 'confirm') {
         if (pinBuffer === pinSetupTemp) {
-          const hash = await hashPin(pinBuffer);
-          localStorage.setItem(PIN_KEY, hash);
+          localStorage.setItem(PIN_KEY, pinBuffer);
           _authed = true;
           document.getElementById('pin-overlay').style.display = 'none';
         } else {
