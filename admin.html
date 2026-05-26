@@ -879,8 +879,13 @@
           throw new Error(err.message || 'שגיאה בעדכון הקובץ');
         }
 
-        status.className   = 'publish-status success';
-        status.textContent = '✅ פורסם בהצלחה! האתר יתעדכן תוך כדקה';
+        status.className = 'publish-status success';
+        status.innerHTML = '✅ פורסם בהצלחה! '
+          + '<a href="https://talkorb-tech.github.io/tals-dips/" target="_blank" '
+          + 'style="color:inherit;font-weight:800;text-decoration:underline;">'
+          + 'פתח את האתר החי ←'
+          + '</a>'
+          + '<br><span style="font-weight:400;font-size:12px;">האתר יתעדכן תוך כ-1 דקה</span>';
 
       } catch (err) {
         status.className   = 'publish-status error';

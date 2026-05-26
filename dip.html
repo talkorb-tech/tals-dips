@@ -19,43 +19,47 @@
     עשוי עם אהבה 🤍
   </footer>
 
-  <script src="data.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    const dip = dips[id];
-    const content = document.getElementById('content');
+    // Always fetch fresh data — bypasses browser cache
+    fetch('data.js', { cache: 'no-cache' })
+      .then(r => r.text())
+      .then(code => {
+        const getData = new Function(code + '; return dips;');
+        renderDip(getData());
+      });
 
-    if (!dip) {
-      content.innerHTML = `
-        <div class="not-found">
-          <span class="big-emoji">🤷</span>
-          <h2>סלט לא נמצא</h2>
-          <p>נסו לסרוק את הברקוד שוב, או <a href="index.html">חזרו לדף הבית</a>.</p>
-        </div>
-      `;
-    } else {
+    function renderDip(dips) {
+      const params  = new URLSearchParams(window.location.search);
+      const id      = params.get('id');
+      const dip     = dips[id];
+      const content = document.getElementById('content');
+
+      if (!dip) {
+        content.innerHTML = `
+          <div class="not-found">
+            <span class="big-emoji">🤷</span>
+            <h2>סלט לא נמצא</h2>
+            <p>נסו לסרוק את הברקוד שוב, או <a href="index.html">חזרו לדף הבית</a>.</p>
+          </div>`;
+        return;
+      }
+
       document.title = `${dip.name} — הסלטים של טל`;
 
-      const ingredientsHTML = dip.ingredients
-        .map(i => `<li>${i}</li>`)
-        .join('');
-
-      const usesHTML = dip.uses
-        .map(u => `<li>${u}</li>`)
-        .join('');
+      const ingredientsHTML = (dip.ingredients || []).map(i => `<li>${i}</li>`).join('');
+      const usesHTML        = (dip.uses        || []).map(u => `<li>${u}</li>`).join('');
 
       content.innerHTML = `
         <div class="dip-page">
           <a href="index.html" class="back-btn">← כל הסלטים</a>
 
-          <div class="dip-hero" style="background: ${dip.color}; margin: 16px 16px 0; border-radius: 16px;">
+          <div class="dip-hero" style="background:${dip.color}; margin:16px 16px 0; border-radius:16px;">
             <span class="dip-emoji">${dip.emoji}</span>
             <div class="dip-name">${dip.name}</div>
             <div class="dip-tagline">${dip.tagline}</div>
           </div>
 
-          <div style="height: 16px"></div>
+          <div style="height:16px"></div>
 
           <div class="section-card">
             <div class="section-label">על הסלט</div>
@@ -68,18 +72,12 @@
           </div>
 
           <div class="section-card">
-            <div class="section-label" style="color: ${dip.accent}">איך להשתמש</div>
-            <ul class="uses-list" style="--accent: ${dip.accent}">${usesHTML}</ul>
+            <div class="section-label" style="color:${dip.accent}">איך להשתמש</div>
+            <ul class="uses-list">${usesHTML}</ul>
           </div>
-        </div>
-      `;
+        </div>`;
 
-      // Color the checkmarks with the dip's accent color
-      document.querySelectorAll('.uses-list li::before').forEach(el => {
-        el.style.color = dip.accent;
-      });
-
-      // Use a style tag for the ::before pseudo-element color
+      // Accent color for checkmarks
       const style = document.createElement('style');
       style.textContent = `.uses-list li::before { color: ${dip.accent}; }`;
       document.head.appendChild(style);
