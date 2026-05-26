@@ -303,28 +303,68 @@
 
     .print-bar { text-align: center; margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
-    /* ── Export tab ── */
-    .export-card {
+    /* ── Publish tab ── */
+    .publish-card {
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 20px;
+      padding: 32px 24px;
       margin-bottom: 16px;
+      text-align: center;
     }
-    .export-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-    .export-card p { font-size: 14px; color: var(--text-muted); line-height: 1.65; margin-bottom: 16px; }
-    .code-preview {
-      background: #111;
-      color: #98d98e;
-      padding: 14px 16px;
+    .publish-rocket { font-size: 52px; margin-bottom: 12px; line-height: 1; }
+    .publish-title  { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+    .publish-desc   { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
+
+    .btn-publish {
+      background: #1a1a1a; color: #fff;
+      font-size: 17px; font-weight: 800;
+      padding: 14px 36px; border-radius: 99px;
+      border: none; cursor: pointer;
+      font-family: 'Heebo', sans-serif;
+      transition: opacity 0.15s, transform 0.1s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-publish:hover   { opacity: 0.85; }
+    .btn-publish:active  { transform: scale(0.97); }
+    .btn-publish:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .publish-status {
+      margin-top: 16px;
+      padding: 12px 16px;
       border-radius: var(--radius-sm);
-      font-family: monospace; font-size: 12px;
-      max-height: 220px; overflow-y: auto;
-      direction: ltr; text-align: left;
-      margin-bottom: 16px;
-      white-space: pre;
-      line-height: 1.5;
+      font-size: 14px; font-weight: 600;
     }
+    .publish-status.hidden  { display: none; }
+    .publish-status.loading { background: #f0f0ea; color: var(--text-muted); }
+    .publish-status.success { background: #e6f7ec; color: #1a7a3a; }
+    .publish-status.error   { background: #fdecea; color: #b71c1c; }
+
+    /* Token setup */
+    .token-setup {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .token-setup summary {
+      padding: 16px 20px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .token-setup summary::-webkit-details-marker { display: none; }
+    .token-setup[open] summary { border-bottom: 1px solid var(--border); }
+    .token-body {
+      padding: 16px 20px 20px;
+      font-size: 14px; color: var(--text-muted); line-height: 1.7;
+    }
+    .token-body ol { padding-right: 18px; margin-top: 8px; }
+    .token-body li { margin-bottom: 4px; }
+    .token-body a { color: var(--text); font-weight: 600; }
+    .token-body code { background: var(--bg); padding: 1px 6px; border-radius: 4px; font-family: monospace; color: var(--text); }
 
     .info-box {
       background: #eef5fd;
@@ -371,7 +411,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="dips">🥗 סלטים</button>
     <button class="tab-btn" data-tab="qr">📱 QR Codes</button>
-    <button class="tab-btn" data-tab="export">💾 ייצוא</button>
+    <button class="tab-btn" data-tab="publish">🚀 פרסום</button>
   </div>
 
   <!-- ── TAB: Dips ── -->
@@ -406,34 +446,52 @@
     </div>
   </div>
 
-  <!-- ── TAB: Export ── -->
-  <div id="tab-export" class="tab-pane">
-    <div class="export-card">
-      <h3>ייצוא קובץ data.js</h3>
-      <p>
-        כל השינויים שביצעת שמורים בדפדפן שלך.
-        כדי שהאתר יתעדכן לכולם — הורד את הקובץ המעודכן והעלה אותו לגיטהאב.
+  <!-- ── TAB: Publish ── -->
+  <div id="tab-publish" class="tab-pane">
+
+    <!-- Main publish card -->
+    <div class="publish-card">
+      <div class="publish-rocket">🚀</div>
+      <h2 class="publish-title">פרסם שינויים לאתר</h2>
+      <p class="publish-desc">
+        כל השינויים שמורים בדפדפן שלך.<br>
+        לחצי כדי לעדכן את האתר החי — ישירות.
       </p>
-      <div id="code-preview" class="code-preview">לחצי על "ייצוא" כדי לראות את הקוד...</div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="refreshAndDownload()">⬇️ הורד data.js</button>
-        <button class="btn btn-secondary" onclick="updateExportPreview()">🔄 רענן תצוגה</button>
+      <button class="btn btn-publish" id="publish-btn" onclick="publishToGitHub()">
+        🚀 פרסם שינויים
+      </button>
+      <div id="publish-status" class="publish-status hidden"></div>
+    </div>
+
+    <!-- Token setup -->
+    <details class="token-setup" id="token-details">
+      <summary>🔑 הגדרות חיבור ל-GitHub</summary>
+      <div class="token-body">
+        <p>כדי לפרסם ישירות, נדרש GitHub Token אישי (חד-פעמי):</p>
+        <ol>
+          <li>גשי ל-<a href="https://github.com/settings/tokens/new?scopes=public_repo&description=tals-dips-admin" target="_blank"><strong>קישור ליצירת Token</strong></a></li>
+          <li>גללי למטה ← לחצי <strong>Generate token</strong></li>
+          <li>העתיקי את הטוקן שמתחיל ב-<code>ghp_</code></li>
+          <li>הדביקי אותו כאן:</li>
+        </ol>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <input class="form-input" id="gh-token-input" type="password"
+            placeholder="ghp_..." style="direction:ltr; font-family:monospace; flex:1;" />
+          <button class="btn btn-primary" onclick="saveToken()">שמור</button>
+        </div>
+        <div class="field-hint" style="margin-top:8px;">
+          הטוקן נשמר רק בדפדפן שלך ולא עולה לשום מקום.
+        </div>
       </div>
-    </div>
+    </details>
 
-    <div class="info-box">
-      <strong>איך לעדכן את האתר ב-GitHub:</strong>
-      1. הורד את data.js<br>
-      2. גש למאגר שלך ב-GitHub<br>
-      3. לחץ על הקובץ data.js ← עריכה (✏️) ← מחק הכל ← הדבק את התוכן החדש<br>
-      4. לחץ "Commit changes" — האתר יתעדכן תוך דקה
-    </div>
-
+    <!-- Danger zone -->
     <div class="danger-zone">
       <h3>⚠️ איפוס</h3>
-      <p>בטל את כל השינויים שביצעת וחזור לנתונים המקוריים שב-data.js.</p>
+      <p>בטל את כל השינויים שביצעת וחזור לנתונים שעל האתר.</p>
       <button class="btn btn-danger btn-sm" onclick="resetToOriginal()">↺ איפוס לנתונים המקוריים</button>
     </div>
+
   </div>
 
   <!-- ── MODAL ── -->
@@ -538,9 +596,7 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
-        const pane = document.getElementById('tab-' + btn.dataset.tab);
-        pane.classList.add('active');
-        if (btn.dataset.tab === 'export') updateExportPreview();
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       });
     });
 
@@ -738,7 +794,7 @@
       });
     }
 
-    /* ── Export ────────────────────────────────────────── */
+    /* ── Generate data.js content ─────────────────────── */
     function generateDataJs() {
       const lines = [
         'const BRAND_NAME = "הסלטים של טל";',
@@ -767,19 +823,86 @@
       return lines.join('\n');
     }
 
-    function updateExportPreview() {
-      document.getElementById('code-preview').textContent = generateDataJs();
+    /* ── Publish to GitHub ─────────────────────────────── */
+    async function publishToGitHub() {
+      const token = localStorage.getItem('tals_gh_token');
+      if (!token) {
+        document.getElementById('token-details').open = true;
+        document.getElementById('token-details').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      const btn    = document.getElementById('publish-btn');
+      const status = document.getElementById('publish-status');
+
+      btn.disabled    = true;
+      btn.textContent = '⏳ מפרסם...';
+      status.className   = 'publish-status loading';
+      status.textContent = 'מתחבר ל-GitHub...';
+
+      try {
+        const owner   = 'talkorb-tech';
+        const repo    = 'tals-dips';
+        const path    = 'data.js';
+        const apiUrl  = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+        const headers = {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        };
+
+        // 1. Get current file SHA
+        const getRes = await fetch(apiUrl, { headers });
+        if (!getRes.ok) throw new Error('שגיאה בהתחברות — בדקי שהטוקן תקין');
+        const { sha } = await getRes.json();
+
+        // 2. Encode content (handle Hebrew via TextEncoder → base64)
+        const content = generateDataJs();
+        const bytes   = new TextEncoder().encode(content);
+        const encoded = btoa(String.fromCharCode(...bytes));
+
+        status.textContent = 'מעלה שינויים...';
+
+        // 3. Push update
+        const putRes = await fetch(apiUrl, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            message: 'עדכון סלטים מלוח הניהול',
+            content: encoded,
+            sha
+          })
+        });
+
+        if (!putRes.ok) {
+          const err = await putRes.json();
+          throw new Error(err.message || 'שגיאה בעדכון הקובץ');
+        }
+
+        status.className   = 'publish-status success';
+        status.textContent = '✅ פורסם בהצלחה! האתר יתעדכן תוך כדקה';
+
+      } catch (err) {
+        status.className   = 'publish-status error';
+        status.textContent = '❌ ' + err.message;
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = '🚀 פרסם שינויים';
+      }
     }
 
-    function refreshAndDownload() {
-      updateExportPreview();
-      const blob = new Blob([generateDataJs()], { type: 'application/javascript' });
-      const url  = URL.createObjectURL(blob);
-      const a    = Object.assign(document.createElement('a'), { href: url, download: 'data.js' });
-      a.click();
-      URL.revokeObjectURL(url);
+    function saveToken() {
+      const val = document.getElementById('gh-token-input').value.trim();
+      if (!val) { alert('נא להזין טוקן'); return; }
+      localStorage.setItem('tals_gh_token', val);
+      document.getElementById('token-details').open = false;
+      document.getElementById('gh-token-input').value = '';
+      const status = document.getElementById('publish-status');
+      status.className   = 'publish-status success';
+      status.textContent = '🔑 הטוקן נשמר — עכשיו אפשר לפרסם!';
     }
 
+    /* ── Reset ─────────────────────────────────────────── */
     function resetToOriginal() {
       if (!confirm('לאפס הכל לנתונים המקוריים? כל השינויים שלך יימחקו.')) return;
       localStorage.removeItem(STORAGE_KEY);
@@ -796,18 +919,17 @@
     }
 
     /* ── Init ──────────────────────────────────────────── */
-    const savedUrl = localStorage.getItem(URL_KEY) || '';
+    const DEFAULT_URL = 'https://talkorb-tech.github.io/tals-dips';
+    const savedUrl = localStorage.getItem(URL_KEY) || DEFAULT_URL;
     document.getElementById('base-url-input').value = savedUrl;
+
+    // Open token setup if not yet configured
+    if (!localStorage.getItem('tals_gh_token')) {
+      document.getElementById('token-details').open = true;
+    }
 
     renderDipsList();
     updateColorPreview();
-
-    // Auto-generate QR if URL was previously saved
-    if (savedUrl) {
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        if (b.dataset.tab === 'qr') b.dataset.autoqr = '1';
-      });
-    }
   </script>
 
 </body>
