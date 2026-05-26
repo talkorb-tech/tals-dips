@@ -390,10 +390,75 @@
     @media (max-width: 480px) {
       .qr-labels-grid { grid-template-columns: 1fr; }
     }
-
     @media (max-width: 400px) {
       .two-col { grid-template-columns: 1fr; }
     }
+
+    /* ── PIN Lock ── */
+    #pin-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #1a1a1a;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .pin-box {
+      width: 100%; max-width: 320px;
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+    }
+    .pin-brand {
+      font-size: 13px; font-weight: 700; letter-spacing: 1px;
+      color: #666; text-transform: uppercase; margin-bottom: 28px;
+    }
+    .pin-icon   { font-size: 40px; margin-bottom: 16px; line-height: 1; }
+    .pin-title  { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+    .pin-subtitle { font-size: 14px; color: #888; margin-bottom: 28px; text-align: center; }
+
+    .pin-dots {
+      display: flex; gap: 14px; margin-bottom: 12px;
+    }
+    .pin-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid #555;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .pin-dot.filled { background: #fff; border-color: #fff; }
+
+    .pin-error {
+      height: 20px; font-size: 13px; color: #e57373;
+      margin-bottom: 20px; text-align: center;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-6px); }
+      80%      { transform: translateX(6px); }
+    }
+    .pin-dots.shake { animation: shake 0.4s ease; }
+
+    .pin-numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 72px);
+      grid-template-rows:  repeat(4, 64px);
+      gap: 10px;
+    }
+    .pin-numpad button {
+      background: #2a2a2a; color: #fff;
+      border: none; border-radius: 50%;
+      font-family: 'Heebo', sans-serif;
+      font-size: 22px; font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+    }
+    .pin-numpad button:active { background: #444; transform: scale(0.93); }
+    .pin-numpad .pin-key-action {
+      background: #fff; color: #1a1a1a;
+      font-size: 14px; font-weight: 800;
+    }
+    .pin-numpad .pin-key-action:active { background: #ddd; }
+    .pin-numpad .pin-key-del { font-size: 18px; }
+    /* 0 is center of last row, action on right, del on left */
   </style>
 </head>
 <body>
@@ -480,6 +545,15 @@
       </div>
     </details>
 
+    <!-- Change PIN -->
+    <div class="export-card" style="margin-bottom:16px;">
+      <h3>🔐 שינוי קוד כניסה</h3>
+      <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:14px;">
+        לחצי כדי להגדיר קוד כניסה חדש לדף הניהול.
+      </p>
+      <button class="btn btn-secondary btn-sm" onclick="startChangePIN()">שנה קוד כניסה</button>
+    </div>
+
     <!-- Danger zone -->
     <div class="danger-zone">
       <h3>⚠️ איפוס</h3>
@@ -562,6 +636,41 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal()">ביטול</button>
         <button class="btn btn-primary" onclick="saveDip()">✓ שמור סלט</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PIN Overlay ── -->
+  <div id="pin-overlay">
+    <div class="pin-box">
+      <div class="pin-brand">הסלטים של טל</div>
+      <div class="pin-icon">🔐</div>
+      <div class="pin-title"  id="pin-title">קוד כניסה</div>
+      <div class="pin-subtitle" id="pin-subtitle">הזיני את קוד הכניסה</div>
+
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+        <div class="pin-dot"></div>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+
+      <div class="pin-numpad">
+        <button onclick="pinDigit('1')">1</button>
+        <button onclick="pinDigit('2')">2</button>
+        <button onclick="pinDigit('3')">3</button>
+        <button onclick="pinDigit('4')">4</button>
+        <button onclick="pinDigit('5')">5</button>
+        <button onclick="pinDigit('6')">6</button>
+        <button onclick="pinDigit('7')">7</button>
+        <button onclick="pinDigit('8')">8</button>
+        <button onclick="pinDigit('9')">9</button>
+        <button class="pin-key-del" onclick="pinBackspace()">⌫</button>
+        <button onclick="pinDigit('0')">0</button>
+        <button class="pin-key-action" id="pin-action-btn" onclick="pinAction()">→</button>
       </div>
     </div>
   </div>
@@ -977,18 +1086,136 @@
         .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    /* ── PIN Lock ──────────────────────────────────────── */
+    const PIN_KEY  = 'tals_pin_hash';
+    const AUTH_KEY = 'tals_authed';
+
+    let pinBuffer  = '';
+    let pinMode    = 'enter';   // 'enter' | 'setup' | 'confirm'
+    let pinSetupTemp = '';
+
+    async function hashPin(pin) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function initPinLock() {
+      // Already authenticated this browser session
+      if (sessionStorage.getItem(AUTH_KEY) === '1') {
+        document.getElementById('pin-overlay').style.display = 'none';
+        return;
+      }
+      const saved = localStorage.getItem(PIN_KEY);
+      if (!saved) {
+        // First time: guide them to create a PIN
+        pinMode = 'setup';
+        setPinUI('צור קוד כניסה', 'בחרי קוד PIN בן 4-6 ספרות');
+      } else {
+        pinMode = 'enter';
+        setPinUI('קוד כניסה', 'הזיני את קוד הכניסה');
+      }
+      document.getElementById('pin-overlay').style.display = 'flex';
+    }
+
+    function setPinUI(title, subtitle) {
+      document.getElementById('pin-title').textContent    = title;
+      document.getElementById('pin-subtitle').textContent = subtitle;
+      document.getElementById('pin-action-btn').textContent =
+        (pinMode === 'enter') ? '→' : '✓';
+    }
+
+    function pinDigit(d) {
+      if (pinBuffer.length >= 6) return;
+      pinBuffer += d;
+      updateDots();
+      // Auto-submit in enter mode once we have 4+ digits AND user presses the last one
+    }
+
+    function pinBackspace() {
+      pinBuffer = pinBuffer.slice(0, -1);
+      updateDots();
+    }
+
+    function updateDots() {
+      document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+        dot.classList.toggle('filled', i < pinBuffer.length);
+      });
+      document.getElementById('pin-error').textContent = '';
+    }
+
+    function pinError(msg) {
+      document.getElementById('pin-error').textContent = msg;
+      const dots = document.getElementById('pin-dots');
+      dots.classList.add('shake');
+      setTimeout(() => dots.classList.remove('shake'), 450);
+      pinBuffer = '';
+      updateDots();
+    }
+
+    async function pinAction() {
+      if (pinBuffer.length < 4) {
+        pinError('הקוד חייב להכיל לפחות 4 ספרות');
+        return;
+      }
+      if (pinMode === 'enter') {
+        const hash  = await hashPin(pinBuffer);
+        const saved = localStorage.getItem(PIN_KEY);
+        if (hash === saved) {
+          sessionStorage.setItem(AUTH_KEY, '1');
+          document.getElementById('pin-overlay').style.display = 'none';
+        } else {
+          pinError('קוד שגוי — נסי שוב');
+        }
+      } else if (pinMode === 'setup') {
+        pinSetupTemp = pinBuffer;
+        pinBuffer = '';
+        updateDots();
+        pinMode = 'confirm';
+        setPinUI('אמתי את הקוד', 'הזיני את הקוד שוב לאישור');
+      } else if (pinMode === 'confirm') {
+        if (pinBuffer === pinSetupTemp) {
+          const hash = await hashPin(pinBuffer);
+          localStorage.setItem(PIN_KEY, hash);
+          sessionStorage.setItem(AUTH_KEY, '1');
+          document.getElementById('pin-overlay').style.display = 'none';
+        } else {
+          pinSetupTemp = '';
+          pinMode = 'setup';
+          setPinUI('צור קוד כניסה', 'הקודים לא תאמו — נסי שוב');
+          pinError('הקודים לא תאמו');
+        }
+      }
+    }
+
+    // Keyboard support
+    document.addEventListener('keydown', e => {
+      if (document.getElementById('pin-overlay').style.display === 'none') return;
+      if (e.key >= '0' && e.key <= '9') pinDigit(e.key);
+      else if (e.key === 'Backspace')    pinBackspace();
+      else if (e.key === 'Enter')        pinAction();
+    });
+
+    function startChangePIN() {
+      pinBuffer    = '';
+      pinSetupTemp = '';
+      pinMode      = 'setup';
+      updateDots();
+      setPinUI('צור קוד חדש', 'בחרי קוד PIN חדש בן 4-6 ספרות');
+      document.getElementById('pin-overlay').style.display = 'flex';
+    }
+
     /* ── Init ──────────────────────────────────────────── */
     const DEFAULT_URL = 'https://talkorb-tech.github.io/tals-dips';
     const savedUrl = localStorage.getItem(URL_KEY) || DEFAULT_URL;
     document.getElementById('base-url-input').value = savedUrl;
 
-    // Open token setup if not yet configured
     if (!localStorage.getItem('tals_gh_token')) {
       document.getElementById('token-details').open = true;
     }
 
     renderDipsList();
     updateColorPreview();
+    initPinLock();
   </script>
 
 </body>
