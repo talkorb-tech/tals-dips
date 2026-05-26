@@ -255,53 +255,56 @@
     /* Label grid — 3 per row on screen */
     .qr-labels-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;         /* no gap — cut lines handle spacing */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
     }
 
-    /* Each label */
+    /* Each label card */
     .qr-label {
-      border: 1.5px dashed #ccc;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
       display: flex;
       flex-direction: column;
       align-items: center;
       background: #fff;
       overflow: hidden;
-      cursor: default;
-      position: relative;
+      box-shadow: var(--shadow);
     }
     .qr-label-top {
-      padding: 6px 8px 2px;
-      font-size: 9px;
+      padding: 10px 8px 4px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.5px;
-      color: #aaa;
+      color: #bbb;
       text-align: center;
       width: 100%;
     }
     .qr-label canvas {
       display: block;
-      margin: 4px auto 0;
+      margin: 4px auto 8px;
     }
     .qr-label-bottom {
       width: 100%;
-      padding: 7px 8px 8px;
+      padding: 9px 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      margin-top: 4px;
+      gap: 6px;
     }
-    .qr-label-bottom .lb-emoji { font-size: 15px; line-height: 1; }
+    .qr-label-bottom .lb-emoji { font-size: 16px; line-height: 1; }
     .qr-label-bottom .lb-name {
-      font-size: 12px; font-weight: 800;
-      color: #fff; line-height: 1.2;
-      text-align: center;
+      font-size: 13px; font-weight: 800;
+      color: #fff; line-height: 1.2; text-align: center;
+    }
+    .qr-save-btn {
+      width: calc(100% - 16px);
+      margin: 0 8px 10px;
+      justify-content: center;
+      font-size: 13px;
     }
 
     .qr-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
-
-    .print-bar { text-align: center; margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .print-bar { display: none; }
 
     /* ── Publish tab ── */
     .publish-card {
@@ -384,16 +387,8 @@
     .danger-zone h3 { font-size: 15px; font-weight: 700; color: var(--danger); margin-bottom: 6px; }
     .danger-zone p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
 
-    /* ── Print ── */
-    @media print {
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .admin-header, .tab-bar, .url-bar, .print-bar,
-      #tab-dips, #tab-export { display: none !important; }
-      #tab-qr { display: block !important; padding: 4mm; }
-      .qr-labels-wrap { box-shadow: none; padding: 0; border-radius: 0; }
-      .qr-labels-title { display: none; }
-      .qr-labels-grid { grid-template-columns: repeat(4, 1fr); }
-      .qr-label { border: 1.5px dashed #bbb; page-break-inside: avoid; }
+    @media (max-width: 480px) {
+      .qr-labels-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 400px) {
@@ -597,6 +592,8 @@
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        // Auto-generate QR codes when switching to QR tab
+        if (btn.dataset.tab === 'qr' && localStorage.getItem(URL_KEY)) generateAllQR();
       });
     });
 
@@ -761,37 +758,94 @@
       Object.entries(currentDips).forEach(([id, dip]) => {
         const url = `${base}/dip.html?id=${id}`;
 
-        // Build label
-        const label = document.createElement('div');
+        const label  = document.createElement('div');
         label.className = 'qr-label';
 
-        // Top: brand name
         const top = document.createElement('div');
         top.className = 'qr-label-top';
         top.textContent = 'הסלטים של טל';
 
-        // QR canvas
         const canvas = document.createElement('canvas');
 
-        // Bottom: colored bar with emoji + name
         const bottom = document.createElement('div');
         bottom.className = 'qr-label-bottom';
         bottom.style.background = dip.accent;
-        bottom.innerHTML = `
-          <span class="lb-emoji">${dip.emoji}</span>
-          <span class="lb-name">${escHtml(dip.name)}</span>
-        `;
+        bottom.innerHTML = `<span class="lb-emoji">${dip.emoji}</span><span class="lb-name">${escHtml(dip.name)}</span>`;
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-secondary btn-sm qr-save-btn';
+        saveBtn.textContent = '💾 שמור תמונה';
+        saveBtn.onclick = () => saveLabelImage(id, dip, canvas);
 
         label.appendChild(top);
         label.appendChild(canvas);
         label.appendChild(bottom);
+        label.appendChild(saveBtn);
         grid.appendChild(label);
 
         QRCode.toCanvas(canvas, url, {
-          width: 110, margin: 1,
-          color: { dark: '#1a1a1a', light: '#ffffff' }
+          width: 180, margin: 2,
+          color: { dark: '#000000', light: '#ffffff' }
         });
       });
+    }
+
+    /* ── Save label as PNG (for Niimbot / gallery) ─────── */
+    function saveLabelImage(id, dip, qrCanvas) {
+      const QR  = qrCanvas.width;   // e.g. 180
+      const W   = QR + 40;          // some padding on each side
+      const H   = QR + 80;          // room for brand + name text
+
+      const off = document.createElement('canvas');
+      off.width = W; off.height = H;
+      const ctx = off.getContext('2d');
+
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // Brand name — small gray text at top
+      ctx.fillStyle = '#aaaaaa';
+      ctx.font = '13px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.direction = 'rtl';
+      ctx.fillText('הסלטים של טל', W / 2, 20);
+
+      // QR code centered
+      ctx.drawImage(qrCanvas, (W - QR) / 2, 30, QR, QR);
+
+      // Dip name — bold black at bottom
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.direction = 'rtl';
+      ctx.fillText(dip.name, W / 2, H - 14);
+
+      const dataUrl = off.toDataURL('image/png');
+
+      // iOS: open image in new tab → long-press → Save to Photos
+      if (/iPhone|iPad/i.test(navigator.userAgent)) {
+        const w = window.open('', '_blank');
+        w.document.write(`<!DOCTYPE html><html><head>
+          <title>${dip.name}</title>
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center;
+                   justify-content:center; min-height:100vh; background:#f0f0ea;
+                   font-family:sans-serif; gap:16px; }
+            img  { max-width:85vw; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.15); }
+            p    { color:#666; font-size:15px; text-align:center; padding:0 20px; }
+          </style></head><body>
+          <img src="${dataUrl}" />
+          <p>לחצי על התמונה ← החזיקי ← "שמור תמונה"</p>
+        </body></html>`);
+        return;
+      }
+
+      // Desktop / Android: direct file download
+      Object.assign(document.createElement('a'), {
+        href: dataUrl, download: `qr-${id}.png`
+      }).click();
     }
 
     /* ── Generate data.js content ─────────────────────── */
