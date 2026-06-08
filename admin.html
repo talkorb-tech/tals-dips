@@ -1081,13 +1081,30 @@
     /* ── PIN Lock ──────────────────────────────────────── */
     const PIN_KEY = 'tals_pin';
 
+    // Cookies outlast localStorage — Safari (ITP) wipes localStorage after
+    // 7 days of no visits; cookies with an explicit expiry are NOT affected.
+    function getPIN() {
+      const m = document.cookie.match(/(?:^|;\s*)tals_pin=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      return localStorage.getItem(PIN_KEY); // fallback for any old saves
+    }
+    function setPIN(pin) {
+      const exp = new Date();
+      exp.setFullYear(exp.getFullYear() + 2); // 2-year expiry
+      document.cookie =
+        'tals_pin=' + encodeURIComponent(pin) +
+        '; expires=' + exp.toUTCString() +
+        '; path=/; SameSite=Strict';
+      try { localStorage.setItem(PIN_KEY, pin); } catch(e) {} // keep in sync
+    }
+
     let _authed      = false;  // in-memory only — cleared on every page load
     let pinBuffer    = '';
     let pinMode      = 'enter'; // 'enter' | 'setup' | 'confirm'
     let pinSetupTemp = '';
 
     function initPinLock() {
-      const saved = localStorage.getItem(PIN_KEY);
+      const saved = getPIN();
       if (!saved) {
         pinMode = 'setup';
         setPinUI('צור קוד כניסה', 'הזיני 4 ספרות');
@@ -1138,7 +1155,7 @@
 
     function pinSubmit() {
       if (pinMode === 'enter') {
-        if (pinBuffer === localStorage.getItem(PIN_KEY)) {
+        if (pinBuffer === getPIN()) {
           _authed = true;
           document.getElementById('pin-overlay').style.display = 'none';
         } else {
@@ -1153,7 +1170,7 @@
       } else if (pinMode === 'confirm') {
         if (pinBuffer === pinSetupTemp) {
           // Save, show green-dot success for 1.2 s, then dismiss
-          try { localStorage.setItem(PIN_KEY, pinBuffer); } catch(e) {}
+          setPIN(pinBuffer);
           setPinUI('✅ הקוד נשמר!', 'בכניסה הבאה תצטרכי להזין את הקוד');
           document.getElementById('pin-error').textContent = '';
           document.querySelectorAll('.pin-dot').forEach(dot => {
@@ -1184,7 +1201,7 @@
       pinSetupTemp = '';
       pinMode      = 'setup';
       updateDots();
-      setPinUI('צור קוד חדש', 'בחרי קוד PIN חדש בן 4-6 ספרות');
+      setPinUI('צור קוד חדש', 'הזיני 4 ספרות חדשות');
       document.getElementById('pin-overlay').style.display = 'flex';
     }
 
