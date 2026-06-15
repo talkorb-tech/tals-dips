@@ -752,6 +752,22 @@
     const STORAGE_KEY = 'tals_dips_v1';
     const URL_KEY     = 'tals_base_url';
 
+    /* GitHub token — kept in a long-lived cookie (like the PIN), because
+       Safari (ITP) wipes localStorage after ~7 days of no visits. */
+    function getToken() {
+      const m = document.cookie.match(/(?:^|;\s*)tals_gh_token=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      return localStorage.getItem('tals_gh_token'); // fallback for old saves
+    }
+    function setToken(tok) {
+      const exp = new Date();
+      exp.setFullYear(exp.getFullYear() + 2);
+      document.cookie =
+        'tals_gh_token=' + encodeURIComponent(tok) +
+        '; expires=' + exp.toUTCString() + '; path=/; SameSite=Strict';
+      try { localStorage.setItem('tals_gh_token', tok); } catch(e) {}
+    }
+
     function loadDips() {
       const s = localStorage.getItem(STORAGE_KEY);
       if (s) { try { return JSON.parse(s); } catch(e) {} }
@@ -927,7 +943,7 @@
 
     // Create/update a file in the repo via the GitHub Contents API
     async function ghPutFile(path, base64Content, message) {
-      const token = localStorage.getItem('tals_gh_token');
+      const token = getToken();
       if (!token) throw new Error('חסר טוקן GitHub — הגדירי אותו בלשונית פרסום');
       const owner = 'talkorb-tech', repo = 'tals-dips';
       const api   = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
@@ -957,7 +973,7 @@
 
       const status = document.getElementById('img-upload-status');
 
-      if (!localStorage.getItem('tals_gh_token')) {
+      if (!getToken()) {
         status.textContent = '❌ קודם הגדירי טוקן GitHub בלשונית פרסום';
         alert('כדי להעלות תמונה צריך קודם להגדיר טוקן GitHub (לשונית "פרסום").');
         return;
@@ -1050,7 +1066,7 @@
       const btn = document.getElementById('modal-save-btn');
       const st  = document.getElementById('modal-save-status');
 
-      if (!localStorage.getItem('tals_gh_token')) {
+      if (!getToken()) {
         st.className   = 'modal-save-status err';
         st.textContent = 'נשמר במכשיר. כדי לפרסם הגדירי טוקן GitHub (לשונית פרסום).';
         return;
@@ -1079,7 +1095,7 @@
       renderDipsList();
 
       // Deleting is a change too — deploy it.
-      if (!localStorage.getItem('tals_gh_token')) {
+      if (!getToken()) {
         showToast('נמחק במכשיר. להגדיר טוקן GitHub כדי לפרסם.', 'err');
         return;
       }
@@ -1236,7 +1252,7 @@
 
     // Manual "publish everything" button on the פרסום tab
     async function publishToGitHub() {
-      const token = localStorage.getItem('tals_gh_token');
+      const token = getToken();
       if (!token) {
         document.getElementById('token-details').open = true;
         document.getElementById('token-details').scrollIntoView({ behavior: 'smooth' });
@@ -1272,7 +1288,7 @@
     function saveToken() {
       const val = document.getElementById('gh-token-input').value.trim();
       if (!val) { alert('נא להזין טוקן'); return; }
-      localStorage.setItem('tals_gh_token', val);
+      setToken(val);
       document.getElementById('token-details').open = false;
       document.getElementById('gh-token-input').value = '';
       const status = document.getElementById('publish-status');
@@ -1466,7 +1482,7 @@
     const savedUrl = localStorage.getItem(URL_KEY) || DEFAULT_URL;
     document.getElementById('base-url-input').value = savedUrl;
 
-    if (!localStorage.getItem('tals_gh_token')) {
+    if (!getToken()) {
       document.getElementById('token-details').open = true;
     }
 
