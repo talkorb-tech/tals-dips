@@ -628,9 +628,16 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">תיאור קצר</label>
-          <input class="form-input" id="field-tagline" type="text" placeholder="קרמי, עשיר, מלא טעם" />
+        <div class="two-col">
+          <div class="form-group">
+            <label class="form-label">מחיר (₪)</label>
+            <input class="form-input" id="field-price" type="text" inputmode="decimal"
+              placeholder="32" style="direction:ltr; text-align:center;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">תיאור קצר</label>
+            <input class="form-input" id="field-tagline" type="text" placeholder="קרמי, עשיר, מלא טעם" />
+          </div>
         </div>
 
         <div class="form-group">
@@ -765,7 +772,7 @@
         <div class="dip-row">
           <div class="row-emoji">${dip.image ? `<img class="row-thumb" src="${escHtml(dip.image)}" alt="" />` : dip.emoji}</div>
           <div class="row-info">
-            <div class="row-name">${escHtml(dip.name)}</div>
+            <div class="row-name">${escHtml(dip.name)}${dip.price ? ` · ₪${escHtml(dip.price)}` : ''}</div>
             <div class="row-tagline">${escHtml(dip.tagline)}</div>
           </div>
           <div class="row-swatch" style="background:${dip.accent}"></div>
@@ -787,6 +794,7 @@
       document.getElementById('modal-title').textContent = 'הוסף סלט חדש';
       setField('emoji', '🥗');
       setField('name', '');
+      setField('price', '');
       setField('tagline', '');
       setField('description', '');
       setField('color', '#f5e6c8');
@@ -808,6 +816,7 @@
       document.getElementById('modal-title').textContent = 'ערוך סלט';
       setField('emoji',       dip.emoji);
       setField('name',        dip.name);
+      setField('price',       dip.price || '');
       setField('tagline',     dip.tagline);
       setField('description', dip.description);
       setField('color',       dip.color);
@@ -1002,6 +1011,8 @@
       };
       const imgVal = document.getElementById('field-image').value.trim();
       if (imgVal) dipObj.image = imgVal;
+      const priceVal = document.getElementById('field-price').value.trim();
+      if (priceVal) dipObj.price = priceVal;
       currentDips[id] = dipObj;
 
       persistDips();
@@ -1132,6 +1143,7 @@
         lines.push(`    name: ${JSON.stringify(dip.name)},`);
         lines.push(`    emoji: ${JSON.stringify(dip.emoji)},`);
         if (dip.image) lines.push(`    image: ${JSON.stringify(dip.image)},`);
+        if (dip.price) lines.push(`    price: ${JSON.stringify(dip.price)},`);
         lines.push(`    tagline: ${JSON.stringify(dip.tagline)},`);
         lines.push(`    description: ${JSON.stringify(dip.description)},`);
         lines.push(`    ingredients: [`);

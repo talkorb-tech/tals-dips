@@ -53,6 +53,10 @@
       const ingredientsHTML = (dip.ingredients || []).map(i => `<li>${i}</li>`).join('');
       const usesHTML        = (dip.uses        || []).map(u => `<li>${u}</li>`).join('');
 
+      const priceHTML = dip.price
+        ? `<div class="dip-price" style="color:${dip.accent}">₪${dip.price}</div>`
+        : '';
+
       // Hero: photo if the dip has one (graphic already shows name + ingredients),
       // otherwise the classic emoji + name hero.
       const heroHTML = dip.image
@@ -79,6 +83,7 @@
           <a href="index.html" class="back-btn">← כל הסלטים</a>
 
           ${heroHTML}
+          ${priceHTML}
 
           <div style="height:16px"></div>
 

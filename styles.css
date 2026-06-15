@@ -150,6 +150,15 @@ body {
   font-weight: 700;
   text-align: center;
   padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.card-price {
+  font-weight: 800;
+  font-size: 15px;
 }
 
 /* ── Dip detail page ── */
@@ -205,6 +214,13 @@ body {
   font-style: italic;
   color: var(--text-muted);
   margin: 14px 24px 0;
+}
+
+.dip-price {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  margin: 12px 24px 0;
 }
 
 .section-card {
