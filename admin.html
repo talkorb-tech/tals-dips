@@ -565,11 +565,22 @@
       <button class="btn btn-secondary btn-sm" onclick="startChangePIN()">שנה קוד כניסה</button>
     </div>
 
+    <!-- Sync from live site -->
+    <div class="export-card" style="margin-bottom:16px;">
+      <h3>🔄 טען סלטים מהאתר</h3>
+      <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:14px;">
+        מושך את רשימת הסלטים העדכנית מהאתר החי. השתמשי בזה אם הניהול
+        מציג סלטים ישנים. ⚠️ שינויים מקומיים שלא פורסמו יוחלפו.
+      </p>
+      <button class="btn btn-primary btn-sm" onclick="syncFromSite()">🔄 טען מהאתר</button>
+      <div id="sync-status" class="field-hint" style="margin-top:10px;"></div>
+    </div>
+
     <!-- Danger zone -->
     <div class="danger-zone">
       <h3>⚠️ איפוס</h3>
-      <p>בטל את כל השינויים שביצעת וחזור לנתונים שעל האתר.</p>
-      <button class="btn btn-danger btn-sm" onclick="resetToOriginal()">↺ איפוס לנתונים המקוריים</button>
+      <p>מחק את העותק המקומי בדפדפן וטען מחדש מהאתר.</p>
+      <button class="btn btn-danger btn-sm" onclick="resetToOriginal()">↺ איפוס העותק המקומי</button>
     </div>
 
   </div>
@@ -1221,11 +1232,40 @@
       status.textContent = '🔑 הטוקן נשמר — עכשיו אפשר לפרסם!';
     }
 
+    /* ── Sync from the live site ───────────────────────── */
+    // Fetches the current data.js from the server (cache-busted) and replaces
+    // the local copy — fixes the admin showing stale dips from localStorage.
+    async function fetchLiveDips() {
+      const res = await fetch('data.js?t=' + Date.now(), { cache: 'no-cache' });
+      if (!res.ok) throw new Error('לא ניתן לטעון את data.js מהאתר');
+      const code = await res.text();
+      return new Function(code + '; return dips;')();
+    }
+
+    async function syncFromSite() {
+      const status = document.getElementById('sync-status');
+      if (!confirm('לטעון את הסלטים מהאתר? שינויים מקומיים שלא פורסמו יוחלפו.')) return;
+      status.textContent = '⏳ טוען מהאתר...';
+      try {
+        const live = await fetchLiveDips();
+        currentDips = live;
+        persistDips();
+        renderDipsList();
+        status.textContent = '✅ נטענו ' + Object.keys(live).length + ' סלטים מהאתר';
+      } catch (e) {
+        status.textContent = '❌ ' + e.message;
+      }
+    }
+
     /* ── Reset ─────────────────────────────────────────── */
-    function resetToOriginal() {
-      if (!confirm('לאפס הכל לנתונים המקוריים? כל השינויים שלך יימחקו.')) return;
+    async function resetToOriginal() {
+      if (!confirm('למחוק את העותק המקומי ולטעון מחדש מהאתר?')) return;
       localStorage.removeItem(STORAGE_KEY);
-      currentDips = JSON.parse(JSON.stringify(dips));
+      try {
+        currentDips = await fetchLiveDips();
+      } catch (e) {
+        currentDips = JSON.parse(JSON.stringify(dips)); // fallback to bundled
+      }
       persistDips();
       renderDipsList();
     }
