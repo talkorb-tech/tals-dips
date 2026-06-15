@@ -37,12 +37,20 @@ body {
   background: #fff;
 }
 
+.site-header .brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-direction: row-reverse;
+}
+
 .site-header .site-logo {
   width: 36px;
   height: 36px;
   object-fit: contain;
   display: block;
-  margin: 0 auto 8px;
+  flex-shrink: 0;
 }
 
 .site-header .brand {
