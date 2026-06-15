@@ -31,10 +31,18 @@ body {
 
 /* ── Header ── */
 .site-header {
-  padding: 32px 24px 24px;
+  padding: 28px 24px 24px;
   text-align: center;
   border-bottom: 1px solid var(--border);
   background: #fff;
+}
+
+.site-header .site-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 10px;
 }
 
 .site-header .brand {
