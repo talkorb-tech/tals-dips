@@ -154,7 +154,28 @@
       padding: 14px 20px;
       border-top: 1px solid var(--border);
       display: flex; gap: 10px; justify-content: flex-end;
+      align-items: center;
     }
+    .modal-save-status {
+      flex: 1; font-size: 13px; font-weight: 600;
+      color: var(--text-muted); text-align: right;
+    }
+    .modal-save-status.ok    { color: #1a7a3a; }
+    .modal-save-status.err   { color: #b71c1c; }
+
+    /* toast */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1a1a1a; color: #fff;
+      padding: 12px 20px; border-radius: 99px;
+      font-size: 14px; font-weight: 600;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+      opacity: 0; pointer-events: none; z-index: 9998;
+      transition: opacity 0.2s, transform 0.2s;
+      max-width: 90vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.err  { background: #b71c1c; }
 
     /* ── Form ── */
     .form-group { margin-bottom: 18px; }
@@ -523,13 +544,13 @@
     <!-- Main publish card -->
     <div class="publish-card">
       <div class="publish-rocket">🚀</div>
-      <h2 class="publish-title">פרסם שינויים לאתר</h2>
+      <h2 class="publish-title">פרסום לאתר</h2>
       <p class="publish-desc">
-        כל השינויים שמורים בדפדפן שלך.<br>
-        לחצי כדי לעדכן את האתר החי — ישירות.
+        כל שמירה של סלט מתפרסמת אוטומטית לאתר 🎉<br>
+        הכפתור הזה לא חובה — הוא מפרסם הכל מחדש אם משהו לא הסתנכרן.
       </p>
       <button class="btn btn-publish" id="publish-btn" onclick="publishToGitHub()">
-        🚀 פרסם שינויים
+        🚀 פרסם הכל מחדש
       </button>
       <div id="publish-status" class="publish-status hidden"></div>
     </div>
@@ -682,11 +703,14 @@
 
       </div>
       <div class="modal-footer">
+        <div id="modal-save-status" class="modal-save-status"></div>
         <button class="btn btn-secondary" onclick="closeModal()">ביטול</button>
-        <button class="btn btn-primary" onclick="saveDip()">✓ שמור סלט</button>
+        <button class="btn btn-primary" id="modal-save-btn" onclick="saveDip()">✓ שמור ופרסם</button>
       </div>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <!-- ── PIN Overlay ── -->
   <div id="pin-overlay">
@@ -831,7 +855,11 @@
       showModal();
     }
 
-    function showModal()  { document.getElementById('modal').classList.remove('hidden'); }
+    function showModal()  {
+      const st = document.getElementById('modal-save-status');
+      st.className = 'modal-save-status'; st.textContent = '';
+      document.getElementById('modal').classList.remove('hidden');
+    }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
     function setField(name, val) {
@@ -990,7 +1018,7 @@
     }
 
     /* ── Save / Delete ─────────────────────────────────── */
-    function saveDip() {
+    async function saveDip() {
       const id = document.getElementById('field-id').value.trim();
       if (!id)                        { alert('נא להזין מזהה URL'); return; }
       if (!/^[a-z0-9_-]+$/i.test(id)) { alert('המזהה יכול להכיל רק אותיות לועזיות, מספרים, קו תחתון או מקף'); return; }
@@ -1017,14 +1045,51 @@
 
       persistDips();
       renderDipsList();
-      closeModal();
+
+      // Save = deploy. Push to the live site right away.
+      const btn = document.getElementById('modal-save-btn');
+      const st  = document.getElementById('modal-save-status');
+
+      if (!localStorage.getItem('tals_gh_token')) {
+        st.className   = 'modal-save-status err';
+        st.textContent = 'נשמר במכשיר. כדי לפרסם הגדירי טוקן GitHub (לשונית פרסום).';
+        return;
+      }
+
+      const orig = btn.textContent;
+      btn.disabled = true; btn.textContent = '⏳ מפרסם...';
+      st.className = 'modal-save-status'; st.textContent = 'שומר ומפרסם...';
+      try {
+        await pushDataJsToGitHub();
+        st.className = 'modal-save-status ok';
+        st.textContent = '✅ נשמר ופורסם! האתר יתעדכן תוך כ-1 דקה';
+        setTimeout(closeModal, 1000);
+      } catch (e) {
+        st.className = 'modal-save-status err';
+        st.textContent = '❌ הפרסום נכשל: ' + e.message;
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
     }
 
-    function deleteDip(id) {
-      if (!confirm(`למחוק את "${currentDips[id]?.name}"?`)) return;
+    async function deleteDip(id) {
+      if (!confirm(`למחוק את "${currentDips[id]?.name}"? הסלט יוסר מהאתר.`)) return;
       delete currentDips[id];
       persistDips();
       renderDipsList();
+
+      // Deleting is a change too — deploy it.
+      if (!localStorage.getItem('tals_gh_token')) {
+        showToast('נמחק במכשיר. להגדיר טוקן GitHub כדי לפרסם.', 'err');
+        return;
+      }
+      showToast('⏳ מפרסם מחיקה...');
+      try {
+        await pushDataJsToGitHub();
+        showToast('✅ נמחק ופורסם');
+      } catch (e) {
+        showToast('❌ הפרסום נכשל: ' + e.message, 'err');
+      }
     }
 
     /* ── QR Codes ──────────────────────────────────────── */
@@ -1161,6 +1226,15 @@
     }
 
     /* ── Publish to GitHub ─────────────────────────────── */
+    // Core: push the generated data.js to the repo (throws on failure)
+    async function pushDataJsToGitHub() {
+      const content = generateDataJs();
+      const bytes   = new TextEncoder().encode(content);
+      const encoded = btoa(String.fromCharCode(...bytes));
+      await ghPutFile('data.js', encoded, 'עדכון סלטים מלוח הניהול');
+    }
+
+    // Manual "publish everything" button on the פרסום tab
     async function publishToGitHub() {
       const token = localStorage.getItem('tals_gh_token');
       if (!token) {
@@ -1175,47 +1249,10 @@
       btn.disabled    = true;
       btn.textContent = '⏳ מפרסם...';
       status.className   = 'publish-status loading';
-      status.textContent = 'מתחבר ל-GitHub...';
+      status.textContent = 'מעלה שינויים...';
 
       try {
-        const owner   = 'talkorb-tech';
-        const repo    = 'tals-dips';
-        const path    = 'data.js';
-        const apiUrl  = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-        const headers = {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        };
-
-        // 1. Get current file SHA
-        const getRes = await fetch(apiUrl, { headers });
-        if (!getRes.ok) throw new Error('שגיאה בהתחברות — בדקי שהטוקן תקין');
-        const { sha } = await getRes.json();
-
-        // 2. Encode content (handle Hebrew via TextEncoder → base64)
-        const content = generateDataJs();
-        const bytes   = new TextEncoder().encode(content);
-        const encoded = btoa(String.fromCharCode(...bytes));
-
-        status.textContent = 'מעלה שינויים...';
-
-        // 3. Push update
-        const putRes = await fetch(apiUrl, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            message: 'עדכון סלטים מלוח הניהול',
-            content: encoded,
-            sha
-          })
-        });
-
-        if (!putRes.ok) {
-          const err = await putRes.json();
-          throw new Error(err.message || 'שגיאה בעדכון הקובץ');
-        }
-
+        await pushDataJsToGitHub();
         status.className = 'publish-status success';
         status.innerHTML = '✅ פורסם בהצלחה! '
           + '<a href="https://talkorb-tech.github.io/tals-dips/" target="_blank" '
@@ -1223,7 +1260,6 @@
           + 'פתח את האתר החי ←'
           + '</a>'
           + '<br><span style="font-weight:400;font-size:12px;">האתר יתעדכן תוך כ-1 דקה</span>';
-
       } catch (err) {
         status.className   = 'publish-status error';
         status.textContent = '❌ ' + err.message;
@@ -1283,6 +1319,15 @@
     }
 
     /* ── Utils ─────────────────────────────────────────── */
+    let _toastTimer = null;
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'show' + (type === 'err' ? ' err' : '');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => { t.className = ''; }, 3200);
+    }
+
     function escHtml(s) {
       return String(s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;')
