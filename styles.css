@@ -38,11 +38,11 @@ body {
 }
 
 .site-header .site-logo {
-  width: 72px;
-  height: 72px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   display: block;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
 }
 
 .site-header .brand {
