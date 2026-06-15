@@ -83,6 +83,7 @@ const dips = {
     name: "טפנד זיתים",
     emoji: "🫒",
     image: "pics/tapenade.jpg",
+    price: "46",
     tagline: "זיתי קלמטה, עמוק, מלוח",
     description: "טפנד ים תיכוני מזיתי קלמטה משובחים, שום ופטרוזיליה, עם פתיתי פלפל שאטה ושמן זית. מלוח, עמוק ומלא אופי.",
     ingredients: [
