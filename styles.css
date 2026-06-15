@@ -110,6 +110,32 @@ body {
   line-height: 1.4;
 }
 
+/* Photo cards — full graphic + name caption */
+.dip-card-photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.dip-card-photo .card-photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--bg);
+}
+
+.dip-card-photo .card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dip-card-photo .card-caption {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  padding: 12px 10px;
+}
+
 /* ── Dip detail page ── */
 .dip-page {
   max-width: 480px;
@@ -141,6 +167,28 @@ body {
   color: var(--text-muted);
   margin-top: 6px;
   font-style: italic;
+}
+
+/* Photo hero — the full graphic */
+.dip-hero-img {
+  margin: 16px 16px 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.dip-hero-img img {
+  width: 100%;
+  display: block;
+}
+
+.dip-tagline-under {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 14px 24px 0;
 }
 
 .section-card {

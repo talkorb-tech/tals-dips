@@ -183,6 +183,23 @@
       margin-bottom: 10px; line-height: 1;
     }
 
+    /* image upload preview */
+    .img-preview {
+      width: 100%; max-width: 240px; margin: 0 auto;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed var(--border);
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; cursor: pointer;
+    }
+    .img-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .img-preview .img-placeholder { font-size: 56px; line-height: 1; }
+    .row-thumb {
+      width: 40px; height: 40px; border-radius: 8px;
+      object-fit: cover; display: block;
+    }
+
     .two-col { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
 
     /* dynamic lists */
@@ -566,11 +583,30 @@
       </div>
       <div class="modal-body">
 
-        <div class="emoji-hero" id="emoji-preview">🥗</div>
+        <!-- Photo upload -->
+        <div class="form-group">
+          <label class="form-label">תמונת הסלט</label>
+          <div class="img-preview" id="img-preview"
+               onclick="document.getElementById('field-image-file').click()">
+            <span class="img-placeholder">📷</span>
+          </div>
+          <input type="file" id="field-image-file" accept="image/*"
+                 style="display:none" onchange="handleImagePick(event)" />
+          <input type="hidden" id="field-image" />
+          <div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">
+            <button type="button" class="btn btn-secondary btn-sm"
+              onclick="document.getElementById('field-image-file').click()">📷 העלי תמונה</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="img-remove-btn"
+              onclick="removeImage()" style="display:none;">🗑 הסר תמונה</button>
+          </div>
+          <div class="field-hint" id="img-upload-status" style="text-align:center;">
+            התמונה תכווץ ותועלה אוטומטית · דרוש טוקן GitHub (לשונית פרסום)
+          </div>
+        </div>
 
         <div class="two-col">
           <div class="form-group">
-            <label class="form-label">אמוג'י</label>
+            <label class="form-label">אמוג'י (גיבוי)</label>
             <input class="form-input" id="field-emoji" type="text" maxlength="4"
               style="font-size:22px; text-align:center;"
               oninput="updateEmojiPreview(this.value)" />
@@ -716,7 +752,7 @@
 
       list.innerHTML = entries.map(([id, dip]) => `
         <div class="dip-row">
-          <div class="row-emoji">${dip.emoji}</div>
+          <div class="row-emoji">${dip.image ? `<img class="row-thumb" src="${escHtml(dip.image)}" alt="" />` : dip.emoji}</div>
           <div class="row-info">
             <div class="row-name">${escHtml(dip.name)}</div>
             <div class="row-tagline">${escHtml(dip.tagline)}</div>
@@ -745,7 +781,9 @@
       setField('color', '#f5e6c8');
       setField('accent', '#c8a45a');
       setField('id', 'd' + Date.now().toString().slice(-5));
-      updateEmojiPreview('🥗');
+      document.getElementById('field-image').value = '';
+      setImagePreview('');
+      resetImageStatus();
       updateColorPreview();
       renderDynamicList('ingredients-list', []);
       renderDynamicList('uses-list', []);
@@ -764,7 +802,9 @@
       setField('color',       dip.color);
       setField('accent',      dip.accent);
       setField('id',          id);
-      updateEmojiPreview(dip.emoji);
+      document.getElementById('field-image').value = dip.image || '';
+      setImagePreview(dip.image || '');
+      resetImageStatus();
       updateColorPreview();
       renderDynamicList('ingredients-list', dip.ingredients || []);
       renderDynamicList('uses-list',        dip.uses        || []);
@@ -779,7 +819,122 @@
     }
 
     function updateEmojiPreview(val) {
-      document.getElementById('emoji-preview').textContent = val || '🥗';
+      // Emoji only shows in the preview box when there is no photo
+      if (!document.getElementById('field-image').value) {
+        document.getElementById('img-preview').innerHTML =
+          `<span class="img-placeholder">${escHtml(val || '🥗')}</span>`;
+      }
+    }
+
+    /* ── Image preview / upload ────────────────────────── */
+    function setImagePreview(src) {
+      const box       = document.getElementById('img-preview');
+      const removeBtn  = document.getElementById('img-remove-btn');
+      if (src) {
+        box.innerHTML = `<img src="${escHtml(src)}" alt="" />`;
+        if (removeBtn) removeBtn.style.display = '';
+      } else {
+        const emoji = document.getElementById('field-emoji').value || '🥗';
+        box.innerHTML = `<span class="img-placeholder">${escHtml(emoji)}</span>`;
+        if (removeBtn) removeBtn.style.display = 'none';
+      }
+    }
+
+    function removeImage() {
+      document.getElementById('field-image').value = '';
+      setImagePreview('');
+      resetImageStatus();
+    }
+
+    function resetImageStatus() {
+      document.getElementById('img-upload-status').textContent =
+        'התמונה תכווץ ותועלה אוטומטית · דרוש טוקן GitHub (לשונית פרסום)';
+    }
+
+    // Shrink a chosen photo (max 1000px, JPEG) → data URL
+    function fileToResizedDataURL(file, maxDim = 1000, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > height) {
+              if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+            } else {
+              if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+            }
+            const c = document.createElement('canvas');
+            c.width = width; c.height = height;
+            c.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(c.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Create/update a file in the repo via the GitHub Contents API
+    async function ghPutFile(path, base64Content, message) {
+      const token = localStorage.getItem('tals_gh_token');
+      if (!token) throw new Error('חסר טוקן GitHub — הגדירי אותו בלשונית פרסום');
+      const owner = 'talkorb-tech', repo = 'tals-dips';
+      const api   = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const headers = {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      };
+      let sha;
+      const get = await fetch(api, { headers });
+      if (get.ok) { sha = (await get.json()).sha; }   // existing file → need its sha
+      const put = await fetch(api, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ message, content: base64Content, sha })
+      });
+      if (!put.ok) {
+        const e = await put.json().catch(() => ({}));
+        throw new Error(e.message || 'שגיאה בהעלאת התמונה');
+      }
+      return true;
+    }
+
+    async function handleImagePick(ev) {
+      const file = ev.target.files[0];
+      ev.target.value = '';               // allow re-picking the same file later
+      if (!file) return;
+
+      const status = document.getElementById('img-upload-status');
+
+      if (!localStorage.getItem('tals_gh_token')) {
+        status.textContent = '❌ קודם הגדירי טוקן GitHub בלשונית פרסום';
+        alert('כדי להעלות תמונה צריך קודם להגדיר טוקן GitHub (לשונית "פרסום").');
+        return;
+      }
+
+      const id = document.getElementById('field-id').value.trim()
+                 || ('d' + Date.now().toString().slice(-5));
+
+      try {
+        status.textContent = '🗜️ מכווצת תמונה...';
+        const dataUrl = await fileToResizedDataURL(file);
+        setImagePreview(dataUrl);          // show instantly
+
+        status.textContent = '☁️ מעלה ל-GitHub...';
+        const base64 = dataUrl.split(',')[1];
+        const path   = `pics/${id}.jpg`;
+        await ghPutFile(path, base64, `העלאת תמונה ל-${id}`);
+
+        // cache-busting version so the live site picks up replacements
+        const ver = Date.now().toString().slice(-6);
+        document.getElementById('field-image').value = `${path}?v=${ver}`;
+        status.textContent = '✅ התמונה הועלתה — אל תשכחי לשמור ולפרסם';
+      } catch (e) {
+        status.textContent = '❌ ' + e.message;
+      }
     }
 
     function updateColorPreview() {
@@ -824,7 +979,7 @@
 
       if (editingId && editingId !== id) delete currentDips[editingId];
 
-      currentDips[id] = {
+      const dipObj = {
         name,
         emoji:       document.getElementById('field-emoji').value.trim() || '🥗',
         tagline:     document.getElementById('field-tagline').value.trim(),
@@ -834,6 +989,9 @@
         color:       document.getElementById('field-color').value,
         accent:      document.getElementById('field-accent').value,
       };
+      const imgVal = document.getElementById('field-image').value.trim();
+      if (imgVal) dipObj.image = imgVal;
+      currentDips[id] = dipObj;
 
       persistDips();
       renderDipsList();
@@ -962,6 +1120,7 @@
         lines.push(`  ${id}: {`);
         lines.push(`    name: ${JSON.stringify(dip.name)},`);
         lines.push(`    emoji: ${JSON.stringify(dip.emoji)},`);
+        if (dip.image) lines.push(`    image: ${JSON.stringify(dip.image)},`);
         lines.push(`    tagline: ${JSON.stringify(dip.tagline)},`);
         lines.push(`    description: ${JSON.stringify(dip.description)},`);
         lines.push(`    ingredients: [`);

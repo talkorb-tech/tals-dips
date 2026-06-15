@@ -49,15 +49,32 @@
       const ingredientsHTML = (dip.ingredients || []).map(i => `<li>${i}</li>`).join('');
       const usesHTML        = (dip.uses        || []).map(u => `<li>${u}</li>`).join('');
 
+      // Hero: photo if the dip has one (graphic already shows name + ingredients),
+      // otherwise the classic emoji + name hero.
+      const heroHTML = dip.image
+        ? `<div class="dip-hero-img">
+             <img src="${dip.image}" alt="${dip.name}" />
+           </div>
+           ${dip.tagline ? `<div class="dip-tagline-under">${dip.tagline}</div>` : ''}`
+        : `<div class="dip-hero" style="background:${dip.color}; margin:16px 16px 0; border-radius:16px;">
+             <span class="dip-emoji">${dip.emoji}</span>
+             <div class="dip-name">${dip.name}</div>
+             <div class="dip-tagline">${dip.tagline}</div>
+           </div>`;
+
+      // With a photo we skip the duplicate "מה בפנים" (ingredients) block,
+      // since the name and ingredients already appear inside the graphic.
+      const ingredientsBlock = dip.image ? '' : `
+          <div class="section-card">
+            <div class="section-label">מה בפנים</div>
+            <ul class="ingredients-list">${ingredientsHTML}</ul>
+          </div>`;
+
       content.innerHTML = `
         <div class="dip-page">
           <a href="index.html" class="back-btn">← כל הסלטים</a>
 
-          <div class="dip-hero" style="background:${dip.color}; margin:16px 16px 0; border-radius:16px;">
-            <span class="dip-emoji">${dip.emoji}</span>
-            <div class="dip-name">${dip.name}</div>
-            <div class="dip-tagline">${dip.tagline}</div>
-          </div>
+          ${heroHTML}
 
           <div style="height:16px"></div>
 
@@ -65,12 +82,7 @@
             <div class="section-label">על הסלט</div>
             <div class="section-body">${dip.description}</div>
           </div>
-
-          <div class="section-card">
-            <div class="section-label">מה בפנים</div>
-            <ul class="ingredients-list">${ingredientsHTML}</ul>
-          </div>
-
+          ${ingredientsBlock}
           <div class="section-card">
             <div class="section-label" style="color:${dip.accent}">איך להשתמש</div>
             <ul class="uses-list">${usesHTML}</ul>

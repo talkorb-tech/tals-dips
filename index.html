@@ -42,12 +42,23 @@
         card.href = `dip.html?id=${id}`;
         card.className = 'dip-card';
         card.style.borderColor = dip.accent + '44';
-        card.style.background = dip.color;
-        card.innerHTML = `
-          <span class="card-emoji">${dip.emoji}</span>
-          <div class="card-name">${dip.name}</div>
-          <div class="card-tagline">${dip.tagline}</div>
-        `;
+
+        if (dip.image) {
+          // Photo card — the graphic already shows the name
+          card.classList.add('dip-card-photo');
+          card.innerHTML = `
+            <div class="card-photo"><img src="${dip.image}" alt="${dip.name}" loading="lazy" /></div>
+            <div class="card-caption">${dip.name}</div>
+          `;
+        } else {
+          // Fallback — emoji + color
+          card.style.background = dip.color;
+          card.innerHTML = `
+            <span class="card-emoji">${dip.emoji}</span>
+            <div class="card-name">${dip.name}</div>
+            <div class="card-tagline">${dip.tagline}</div>
+          `;
+        }
         grid.appendChild(card);
       });
     }
