@@ -161,6 +161,13 @@ body {
   font-size: 15px;
 }
 
+.card-weight {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
 /* ── Dip detail page ── */
 .dip-page {
   max-width: 480px;
@@ -216,11 +223,24 @@ body {
   margin: 14px 24px 0;
 }
 
+.dip-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 24px 0;
+  flex-wrap: wrap;
+}
+
 .dip-price {
-  text-align: center;
   font-size: 26px;
   font-weight: 900;
-  margin: 12px 24px 0;
+}
+
+.dip-weight {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .section-card {

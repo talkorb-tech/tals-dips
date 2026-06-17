@@ -50,13 +50,16 @@
         const priceHTML = dip.price
           ? `<span class="card-price" style="color:${dip.accent}">₪${dip.price}</span>`
           : '';
+        const weightHTML = dip.weight
+          ? `<span class="card-weight">כ-${dip.weight}</span>`
+          : '';
 
         if (dip.image) {
           // Photo card — the graphic already shows the name
           card.classList.add('dip-card-photo');
           card.innerHTML = `
             <div class="card-photo"><img src="${dip.image}" alt="${dip.name}" loading="lazy" /></div>
-            <div class="card-caption">${dip.name}${priceHTML}</div>
+            <div class="card-caption">${dip.name}${priceHTML}${weightHTML}</div>
           `;
         } else {
           // Fallback — emoji + color
@@ -65,7 +68,7 @@
             <span class="card-emoji">${dip.emoji}</span>
             <div class="card-name">${dip.name}</div>
             <div class="card-tagline">${dip.tagline}</div>
-            ${priceHTML}
+            ${priceHTML}${weightHTML}
           `;
         }
         grid.appendChild(card);

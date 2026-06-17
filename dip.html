@@ -53,8 +53,11 @@
       const ingredientsHTML = (dip.ingredients || []).map(i => `<li>${i}</li>`).join('');
       const usesHTML        = (dip.uses        || []).map(u => `<li>${u}</li>`).join('');
 
-      const priceHTML = dip.price
-        ? `<div class="dip-price" style="color:${dip.accent}">₪${dip.price}</div>`
+      const priceHTML = (dip.price || dip.weight)
+        ? `<div class="dip-price-row">
+             ${dip.price  ? `<span class="dip-price" style="color:${dip.accent}">₪${dip.price}</span>` : ''}
+             ${dip.weight ? `<span class="dip-weight">כ-${dip.weight}</span>` : ''}
+           </div>`
         : '';
 
       // Hero: photo if the dip has one (graphic already shows name + ingredients),
